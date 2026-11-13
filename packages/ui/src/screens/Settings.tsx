@@ -245,6 +245,9 @@ function Keymap({ s }: { s: Settings }) {
 
   return (
     <div className="flex flex-col gap-2">
+      <Panel className="py-1">
+        <Toggle label={t('settings.holdToToggle')} value={s.controls.holdToToggle} onChange={(holdToToggle) => patch('controls', { holdToToggle })} />
+      </Panel>
       <Panel className="py-1.5">
         {ACTIONS.map((a) => (
           <div key={a} className="flex items-center gap-2 min-h-12 px-3 border-b border-line/50 last:border-b-0">
@@ -353,7 +356,6 @@ function Controls({ s }: { s: Settings }) {
           <Toggle label={t('settings.floatingSticks')} value={c.floatingSticks} onChange={(floatingSticks) => patch('controls', { floatingSticks })} />
           <Toggle label={t('settings.aimAssist')} value={c.aimAssist} onChange={(aimAssist) => patch('controls', { aimAssist })} />
           <Toggle label={t('settings.haptics')} value={c.haptics} onChange={(haptics) => patch('controls', { haptics })} />
-          <Toggle label={t('settings.holdToToggle')} value={c.holdToToggle} onChange={(holdToToggle) => patch('controls', { holdToToggle })} />
           <Slider label={t('settings.deadZone')} value={c.deadZone} min={0} max={0.5} step={0.01} format={pct} onChange={(deadZone) => patch('controls', { deadZone })} />
           <Slider label={t('settings.sensitivity')} value={c.sensitivity} min={0.5} max={2} step={0.05} format={times} onChange={(sensitivity) => patch('controls', { sensitivity })} />
         </Panel>

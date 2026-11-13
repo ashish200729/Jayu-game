@@ -109,7 +109,7 @@ export function newProfile(name = ''): Profile {
 export function migrateProfile(raw: unknown): Profile {
   if (!raw || typeof raw !== 'object') throw new Error('profile is not an object');
   const p = { ...(raw as Record<string, unknown>) };
-  let v = typeof p.version === 'number' ? p.version : 1;
+  const v = typeof p.version === 'number' ? p.version : 1;
   if (v > PROFILE_VERSION) throw new Error(`profile from a newer version (${v})`);
   if (v === 1) {
     const stats = emptyStats();
@@ -127,7 +127,6 @@ export function migrateProfile(raw: unknown): Profile {
     p.weeklyKey = '';
     p.muted = [];
     p.syncVersion = 0;
-    v = 2;
   }
   const base = newProfile();
   const out: Profile = {

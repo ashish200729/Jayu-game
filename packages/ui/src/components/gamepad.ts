@@ -37,12 +37,10 @@ function moveFocus(dir: Dir): void {
     const by = b.top + b.height / 2;
     const dx = bx - ax;
     const dy = by - ay;
-    let main = 0;
-    let side = 0;
-    if (dir === 'up') [main, side] = [-dy, dx];
-    else if (dir === 'down') [main, side] = [dy, dx];
-    else if (dir === 'left') [main, side] = [-dx, dy];
-    else [main, side] = [dx, dy];
+    const vertical = dir === 'up' || dir === 'down';
+    const sign = dir === 'up' || dir === 'left' ? -1 : 1;
+    const main = (vertical ? dy : dx) * sign;
+    const side = vertical ? dx : dy;
     if (main <= 4) continue;
     const score = main + Math.abs(side) * 2.2;
     if (score < bestScore) {

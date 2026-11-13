@@ -412,7 +412,7 @@ export const en = {
   'settings.floatingSticks': 'Floating sticks',
   'settings.aimAssist': 'Aim assist',
   'settings.haptics': 'Vibration',
-  'settings.holdToToggle': 'Tap to toggle zoom and crouch',
+  'settings.holdToToggle': 'Zoom and crouch toggle instead of hold',
   'settings.deadZone': 'Stick dead zone',
   'settings.sensitivity': 'Aim sensitivity',
   'settings.preset': 'Layout preset',

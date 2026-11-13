@@ -8,7 +8,8 @@ import { WEAPONS } from '@game/content';
 import { loadMapsFromDisk } from '@game/maps/node';
 import { mapIds } from '@game/maps';
 import { BotDirector } from '@game/bots';
-import { EventType, Sim, defaultConfig, type ModeId } from '@game/sim';
+import { EventType, Sim, defaultConfig } from '@game/sim';
+import type { ModeId } from '@game/content';
 
 loadMapsFromDisk();
 const N = Number(process.argv[2] ?? 200);

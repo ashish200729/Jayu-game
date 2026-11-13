@@ -458,6 +458,7 @@ export class GameClient {
 
   /** Call once per rendered frame. */
   update(now = this.clock.now()): void {
+    this.viewVersion++;
     if (this.lastFrame < 0) this.lastFrame = now;
     const dt = Math.min(250, now - this.lastFrame);
     this.lastFrame = now;
@@ -534,6 +535,8 @@ export class GameClient {
   }
 
   private viewCache: ClientView | null = null;
+  private viewVersion = 0;
+  private builtVersion = -1;
 
   /** Cosmetic prediction of your own shots so muzzle flashes and tracers appear instantly. */
   private predictFire(me: PlayerView, inp: Input): void {
@@ -652,6 +655,8 @@ export class GameClient {
   /** Interpolated world view for rendering. */
   view(): ClientView | null {
     if (!this.snaps.length) return null;
+    if (this.viewCache && this.viewVersion === this.builtVersion) return this.viewCache;
+    this.builtVersion = this.viewVersion;
     const rt = this.renderTick;
     let i1 = this.snaps.findIndex((s) => s.tick > rt);
     if (i1 < 0) i1 = this.snaps.length - 1;

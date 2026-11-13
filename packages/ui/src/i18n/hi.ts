@@ -414,7 +414,7 @@ export const hi: Record<StringKey, string> = {
   'settings.floatingSticks': 'तैरते स्टिक',
   'settings.aimAssist': 'निशाना सहायता',
   'settings.haptics': 'कंपन',
-  'settings.holdToToggle': 'ज़ूम और झुकना टैप से चालू/बंद',
+  'settings.holdToToggle': 'ज़ूम और झुकना दबाए रखने के बजाय टॉगल हों',
   'settings.deadZone': 'स्टिक डेड ज़ोन',
   'settings.sensitivity': 'निशाना संवेदनशीलता',
   'settings.preset': 'लेआउट प्रीसेट',
