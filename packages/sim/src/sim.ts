@@ -85,6 +85,8 @@ export interface PlayerResult {
   objective: number;
   damage: number;
   accuracy: number;
+  shotsFired: number;
+  shotsHit: number;
   headshots: number;
   favouriteWeapon: string;
   weaponKills: Record<string, number>;
@@ -1640,6 +1642,8 @@ export class Sim {
           objective: p.objective,
           damage: p.damageDealt,
           accuracy: p.shotsFired ? p.shotsHit / p.shotsFired : 0,
+          shotsFired: p.shotsFired,
+          shotsHit: p.shotsHit,
           headshots: p.headshots,
           favouriteWeapon: fav,
           weaponKills: { ...p.weaponKills },

@@ -143,6 +143,8 @@ export class MatchHost {
   private seedBase: number;
   private closed = false;
   readonly snapshotInterval: number;
+  /** Offline single-player pause: the simulation stops advancing. */
+  paused = false;
   /** Tick timing statistics (ms). */
   tickStats = { count: 0, total: 0, max: 0, overruns: 0 };
 
@@ -684,6 +686,8 @@ export class MatchHost {
       }
     } else if (this.phase === 'starting') {
       if (now >= this.startAt) this.startMatch();
+    } else if (this.phase === 'playing' && this.sim && this.paused) {
+      this.acc = 0;
     } else if (this.phase === 'playing' && this.sim) {
       this.acc += dt;
       const tickMs = 1000 / TICK_RATE;

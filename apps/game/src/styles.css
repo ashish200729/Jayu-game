@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+@source '../../../packages/ui/src';
+
+/* Design tokens (docs/ART_STYLE.md). Screens never hard-code colours, fonts or durations. */
+@theme {
+  --color-ink: #1b1d26;
+  --color-night: #10121a;
+  --color-panel: #1f2333;
+  --color-panel-2: #2a2f45;
+  --color-line: #3a4060;
+  --color-text: #f4f6fb;
+  --color-muted: #a7b0c6;
+  --color-sun: #ffd34d;
+  --color-sun-dark: #c99a14;
+  --color-coral: #ff7a45;
+  --color-mint: #9cff6b;
+  --color-sky: #5ad1ff;
+  --color-red-team: #ff5a4f;
+  --color-blue-team: #3fa2ff;
+  --color-danger: #ff5a4f;
+  --font-display: 'Baloo 2', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --font-ui: 'Nunito', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --shadow-chunky: 0 4px 0 0 #1b1d26;
+  --shadow-chunky-lg: 0 6px 0 0 #1b1d26;
+  --shadow-soft: 0 10px 30px -10px rgb(0 0 0 / 0.6);
+  --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}
+
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+  --ui-scale: 1;
+  --text-scale: 1;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-night);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+html {
+  font-size: calc(16px * var(--text-scale));
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-sky);
+  outline-offset: 3px;
+}
+
+.safe {
+  padding: max(var(--sat), 8px) max(var(--sar), 12px) max(var(--sab), 8px) max(var(--sal), 12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 1ms !important;
+  transition-duration: 1ms !important;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 8px; }

@@ -71,7 +71,10 @@ describe('determinism across hosts', () => {
     const tick = () => {
       host.update();
       bridge.update();
-      for (const { c, t } of cs) (t.update(), c.update());
+      for (const { c, t } of cs) {
+        t.update();
+        c.update();
+      }
     };
     await pump(tick, 800);
     cs.find(({ c }) => c.playerId === cs[0].c.lobby!.hostId)!.c.lobbyAction({ a: 'start' });
