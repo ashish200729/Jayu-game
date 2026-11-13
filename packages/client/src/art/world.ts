@@ -528,8 +528,10 @@ export function buildCommonTextures(scene: Phaser.Scene): void {
       [20, 31, 20, 38],
       [2, 20, 9, 20],
       [31, 20, 38, 20],
-    ])
-      ctx.moveTo(x0, y0), ctx.lineTo(x1, y1);
+    ]) {
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+    }
     ctx.stroke();
   });
   make('hitmark', 32, 32, (ctx) => {

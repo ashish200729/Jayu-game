@@ -626,4 +626,7 @@ export const hi: Record<StringKey, string> = {
   'tut.done.kb': 'सब तैयार! T से इमोट, Tab से स्कोरबोर्ड और Esc से पॉज़।',
   'tut.done.touch': 'सब तैयार! इमोट बटन से क्विक चैट खुलता है, और पॉज़ बटन ऊपर है।',
   'tut.done.pad': 'सब तैयार! View से स्कोरबोर्ड और Menu से पॉज़।',
+  'settings.editFull': 'फ़ुल स्क्रीन में बदलें',
+  'settings.hide': 'छिपाएँ',
+  'settings.show': 'दिखाएँ',
 };

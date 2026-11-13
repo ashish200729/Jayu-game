@@ -438,11 +438,17 @@ export class Sim {
     const m = this.mode;
     this.updatePhase();
     const frozen = m.phase === 'countdown' || m.phase === 'ended';
-    for (const p of this.players) {
+    // Rotate the update order every tick so no player (or team) always acts first in same-tick duels.
+    const list = this.players.slice();
+    const n = list.length;
+    const off = n ? this.tick % n : 0;
+    for (let i = 0; i < n; i++) {
+      const p = list[(i + off) % n];
+      if (!this.players.includes(p)) continue;
       if (p.alive) this.updatePlayer(p, frozen);
       else this.updateDead(p);
-      this.recordHistory(p);
     }
+    for (const p of this.players) this.recordHistory(p);
     this.updateProjectiles();
     this.updateGrenades();
     this.updateClouds();

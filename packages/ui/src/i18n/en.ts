@@ -624,6 +624,9 @@ export const en = {
   'tut.done.kb': 'All set! T opens emotes, Tab shows the scoreboard and Esc pauses.',
   'tut.done.touch': 'All set! The emote button opens quick chat, and the pause button is at the top.',
   'tut.done.pad': 'All set! View shows the scoreboard and Menu pauses.',
+  'settings.editFull': 'Edit full screen',
+  'settings.hide': 'Hide',
+  'settings.show': 'Show',
 } as const;
 
 export type StringKey = keyof typeof en;

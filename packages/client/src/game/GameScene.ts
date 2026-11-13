@@ -566,7 +566,7 @@ export class GameScene extends Phaser.Scene {
       const speed = 220 + (820 - 220) * power;
       let x = me.x;
       let y = me.y - 28;
-      let vx = Math.cos(aim) * speed + me.vx * 0.3;
+      const vx = Math.cos(aim) * speed + me.vx * 0.3;
       let vy = Math.sin(aim) * speed + me.vy * 0.3;
       for (let i = 0; i < 26; i++) {
         for (let k = 0; k < 4; k++) {
@@ -577,7 +577,6 @@ export class GameScene extends Phaser.Scene {
         if (this.world.solidAtPoint(x, y, view.tick)) break;
         this.arcGfx.fillStyle(0xffffff, 0.9 - i * 0.03).fillCircle(x, y, 3);
       }
-      void vx;
     }
   }
 

@@ -47,7 +47,7 @@ export function Avatar({ loadout, size = 220, pose = 'idle', team = -1, teamColo
       const s = (size * dpr) / 80;
       g.setTransform(s, 0, 0, s, c.width / 2, c.height * 0.86);
       const bob = animate ? Math.sin(t * 2.2) * 1.2 : 0;
-      const spin = pose === 'spin' ? Math.sin(t * 3) : 1;
+      const spin = pose === 'spin' && animate ? Math.sin(t * 3) : 1;
       g.scale(spin === 0 ? 0.01 : spin, 1);
       // shadow
       g.fillStyle = 'rgba(0,0,0,0.3)';

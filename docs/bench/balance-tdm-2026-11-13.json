@@ -1,120 +1,46 @@
 {
-  "date": "2026-11-13T08:59:24.656Z",
+  "date": "2026-11-13T09:43:21.355Z",
   "mode": "tdm",
-  "matchesPerMap": 40,
+  "matchesPerMap": 200,
   "seconds": 180,
   "maps": {
-    "training-grounds": {
-      "red": 16,
-      "blue": 24,
-      "draws": 0,
-      "redWinRate": 0.4,
-      "withinTarget": false,
-      "avgFirstKillSec": 5.8,
-      "spawnKillRate": 0.079
-    },
-    "rooftop-dusk": {
-      "red": 23,
-      "blue": 17,
-      "draws": 0,
-      "redWinRate": 0.575,
-      "withinTarget": false,
-      "avgFirstKillSec": 7,
-      "spawnKillRate": 0.009
-    },
-    "jungle-temple": {
-      "red": 21,
-      "blue": 19,
-      "draws": 0,
-      "redWinRate": 0.525,
-      "withinTarget": true,
-      "avgFirstKillSec": 8.7,
-      "spawnKillRate": 0.004
-    },
-    "snow-outpost": {
-      "red": 17,
-      "blue": 23,
-      "draws": 0,
-      "redWinRate": 0.425,
-      "withinTarget": false,
-      "avgFirstKillSec": 6.1,
-      "spawnKillRate": 0.023
-    },
-    "desert-canyon": {
-      "red": 17,
-      "blue": 23,
-      "draws": 0,
-      "redWinRate": 0.425,
-      "withinTarget": false,
-      "avgFirstKillSec": 8.1,
-      "spawnKillRate": 0.003
-    },
-    "orbital-station": {
-      "red": 20,
-      "blue": 20,
-      "draws": 0,
-      "redWinRate": 0.5,
-      "withinTarget": true,
-      "avgFirstKillSec": 6.7,
-      "spawnKillRate": 0.019
-    },
     "shipyard": {
-      "red": 24,
-      "blue": 16,
+      "red": 112,
+      "blue": 88,
       "draws": 0,
-      "redWinRate": 0.6,
+      "redWinRate": 0.56,
       "withinTarget": false,
       "avgFirstKillSec": 7.3,
-      "spawnKillRate": 0.007
-    },
-    "underground-lab": {
-      "red": 19,
-      "blue": 21,
-      "draws": 0,
-      "redWinRate": 0.475,
-      "withinTarget": true,
-      "avgFirstKillSec": 6.8,
-      "spawnKillRate": 0.045
+      "spawnKillRate": 0.01
     },
     "volcano-base": {
-      "red": 23,
-      "blue": 17,
+      "red": 90,
+      "blue": 110,
       "draws": 0,
-      "redWinRate": 0.575,
-      "withinTarget": false,
-      "avgFirstKillSec": 6.5,
-      "spawnKillRate": 0.018
-    },
-    "haunted-fortress": {
-      "red": 19,
-      "blue": 21,
-      "draws": 0,
-      "redWinRate": 0.475,
+      "redWinRate": 0.45,
       "withinTarget": true,
-      "avgFirstKillSec": 8.4,
-      "spawnKillRate": 0.006
+      "avgFirstKillSec": 6.5,
+      "spawnKillRate": 0.019
     }
   },
   "weaponKills": {
-    "hornet": 17514,
-    "buzzsaw": 64,
-    "special:110": 870,
-    "triplet": 848,
-    "zapline": 101,
-    "mule": 297,
-    "popper": 31,
-    "grizzly": 780,
-    "heron": 585,
-    "sparrow": 50,
-    "special:121": 1,
-    "kestrel": 647,
-    "torchie": 4,
-    "comet": 48,
-    "special:100": 271,
-    "special:112": 3,
-    "special:101": 212
+    "hornet": 18428,
+    "grizzly": 505,
+    "special:110": 411,
+    "heron": 590,
+    "triplet": 578,
+    "mule": 113,
+    "zapline": 157,
+    "kestrel": 489,
+    "buzzsaw": 68,
+    "comet": 56,
+    "sparrow": 75,
+    "popper": 26,
+    "special:100": 5,
+    "thunderclap": 7,
+    "special:101": 1371
   },
   "unusedWeapons": [
-    "thunderclap"
+    "torchie"
   ]
 }

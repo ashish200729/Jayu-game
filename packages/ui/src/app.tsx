@@ -2,7 +2,7 @@ import { AnimatePresence } from 'motion/react';
 import { lazy, Suspense, useEffect } from 'react';
 import { audio } from '@game/client/audio';
 import { initLifecycle, initNativeShell, isNative, webglAvailable } from '@game/platform';
-import { app, currentSession, go, joinPrivateRoom, loadPersisted, measurePings, setPaused, startOffline, type Screen } from './core/app';
+import { app, currentSession, go, joinPrivateRoom, loadPersisted, saveNow, measurePings, setPaused, startOffline, type Screen } from './core/app';
 import type { LobbySettings } from '@game/net';
 import { useStore } from './core/store';
 import { t } from './i18n';
@@ -54,6 +54,9 @@ export async function boot(): Promise<void> {
   });
   applyPrefs();
   app.subscribe(applyPrefs);
+  // Flush pending profile/settings writes when the page is hidden or closed.
+  document.addEventListener('visibilitychange', () => document.hidden && void saveNow());
+  window.addEventListener('pagehide', () => void saveNow());
   go('menu');
   // Invite links (?join=CODE) open the online screen with the code filled in, once a name is set.
   try {

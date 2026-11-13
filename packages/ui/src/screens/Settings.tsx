@@ -68,6 +68,19 @@ function LayoutEditor({ s }: { s: Settings }) {
   const [sel, setSel] = useState<TouchControl>('move');
   const box = useRef<HTMLDivElement>(null);
   const drag = useRef<{ key: TouchControl; id: number } | null>(null);
+  const [full, setFull] = useState(false);
+
+  useEffect(() => {
+    if (!full) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      setFull(false);
+    };
+    window.addEventListener('keydown', h, { capture: true });
+    return () => window.removeEventListener('keydown', h, { capture: true });
+  }, [full]);
 
   useEffect(() => {
     setDraft(s.controls.layouts[preset] ?? defaultTouchLayout());
@@ -118,55 +131,94 @@ function LayoutEditor({ s }: { s: Settings }) {
 
   const cur = draft[sel];
   const keys = Object.keys(defaultTouchLayout()) as TouchControl[];
-  return (
-    <div className="flex flex-col gap-3">
-      <Panel className="py-2">
-        <Segmented
-          label={t('settings.preset')}
-          value={preset}
-          onChange={(p) => patch('controls', { preset: p })}
-          options={[0, 1, 2].map((i) => ({ value: i, label: String(i + 1) }))}
-        />
-      </Panel>
-      <div className="grid lg:grid-cols-[minmax(0,1.6fr)_minmax(15rem,1fr)] gap-3">
-        <div>
-          <div
-            ref={box}
-            className="relative w-full aspect-video rounded-lg border-2 border-ink overflow-hidden bg-gradient-to-b from-panel-2 to-night touch-none select-none"
-            data-testid="layout-editor"
-            aria-label={t('settings.layoutEditor')}
+
+  const canvas = (className: string) => (
+    <div ref={box} className={`[container-type:size] overflow-hidden bg-gradient-to-b from-panel-2 to-night touch-none select-none ${className}`} data-testid={full ? 'layout-editor-full' : 'layout-editor'} aria-label={t('settings.layoutEditor')}>
+      <div className="absolute inset-x-0 bottom-0 h-[22%] bg-line/40 border-t-2 border-line" aria-hidden="true" />
+      <div className="absolute left-1/2 top-[55%] -translate-x-1/2 -translate-y-1/2 text-muted/50 font-display font-extrabold text-sm md:text-lg pointer-events-none whitespace-nowrap">{t('settings.dragHint')}</div>
+      {keys.map((k) => {
+        const c = draft[k];
+        const base = STICKS.includes(k) ? 26 : 13;
+        const d = base * c.size;
+        const on = sel === k;
+        return (
+          <button
+            key={k}
+            type="button"
+            data-testid={`layout-${k}`}
+            aria-label={t(`touch.${k}`)}
+            aria-pressed={on}
+            onPointerDown={onDown(k)}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            onKeyDown={onKey(k)}
+            onClick={() => setSel(k)}
+            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center overflow-hidden font-extrabold text-ink cursor-grab active:cursor-grabbing border-2 ${on ? 'border-sun ring-4 ring-sun/50 z-10' : 'border-ink'} ${c.visible ? 'bg-text' : 'bg-transparent border-dashed !text-muted'}`}
+            style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%`, height: `${d}%`, aspectRatio: '1', fontSize: `${(d * (STICKS.includes(k) ? 0.16 : 0.24)).toFixed(2)}cqh`, opacity: c.visible ? Math.max(0.35, c.opacity) : 0.6 }}
           >
-            <div className="absolute inset-x-0 bottom-0 h-[22%] bg-line/40 border-t-2 border-line" aria-hidden="true" />
-            <div className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 text-muted/50 font-display font-extrabold text-sm md:text-lg pointer-events-none">{t('settings.dragHint')}</div>
-            {keys.map((k) => {
-              const c = draft[k];
-              const base = STICKS.includes(k) ? 26 : 13;
-              const d = base * c.size;
-              const on = sel === k;
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  data-testid={`layout-${k}`}
-                  aria-label={t(`touch.${k}`)}
-                  aria-pressed={on}
-                  onPointerDown={onDown(k)}
-                  onPointerMove={onMove}
-                  onPointerUp={onUp}
-                  onPointerCancel={onUp}
-                  onKeyDown={onKey(k)}
-                  onClick={() => setSel(k)}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center text-[0.6rem] md:text-xs font-extrabold text-ink cursor-grab active:cursor-grabbing border-2 ${on ? 'border-sun ring-4 ring-sun/50 z-10' : 'border-ink'} ${c.visible ? 'bg-text' : 'bg-transparent border-dashed !text-muted'}`}
-                  style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%`, height: `${d}%`, aspectRatio: '1', opacity: c.visible ? Math.max(0.35, c.opacity) : 0.6 }}
-                >
-                  <span className="px-0.5 leading-none text-center">{t(`touch.${k}.short`)}</span>
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-muted mt-1">{t('settings.layoutHint')}</p>
+            <span className="px-0.5 leading-none text-center">{t(`touch.${k}.short`)}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const step = (v: number, dv: number, lo: number, hi: number) => Math.round(Math.max(lo, Math.min(hi, v + dv)) * 100) / 100;
+
+  if (full) {
+    return (
+      <div role="dialog" aria-modal="true" aria-label={t('settings.layoutEditor')} className="fixed inset-0 z-50 bg-night">
+        {canvas('absolute inset-0')}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-1.5 max-w-[min(96vw,40rem)] px-2 py-1.5 rounded-lg border-2 border-ink bg-panel/95 shadow-soft">
+          <span className="font-display font-extrabold text-sun px-1 truncate max-w-[9rem]">{t(`touch.${sel}`)}</span>
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-muted">
+            {t('settings.size')}
+            <Button size="sm" className="!min-h-9 !px-2.5" onClick={() => edit(sel, { size: step(cur.size, -0.1, 0.6, 1.6) })}>
+              −
+            </Button>
+            <span className="w-9 text-center text-text tabular-nums">{times(cur.size)}</span>
+            <Button size="sm" className="!min-h-9 !px-2.5" onClick={() => edit(sel, { size: step(cur.size, 0.1, 0.6, 1.6) })}>
+              +
+            </Button>
+          </span>
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-muted">
+            {t('settings.opacity')}
+            <Button size="sm" className="!min-h-9 !px-2.5" onClick={() => edit(sel, { opacity: step(cur.opacity, -0.1, 0.2, 1) })}>
+              −
+            </Button>
+            <span className="w-9 text-center text-text tabular-nums">{pct(cur.opacity)}</span>
+            <Button size="sm" className="!min-h-9 !px-2.5" onClick={() => edit(sel, { opacity: step(cur.opacity, 0.1, 0.2, 1) })}>
+              +
+            </Button>
+          </span>
+          <Button size="sm" variant={cur.visible ? 'secondary' : 'mint'} className="!min-h-9" onClick={() => edit(sel, { visible: !cur.visible })}>
+            {cur.visible ? t('settings.hide') : t('settings.show')}
+          </Button>
+          <Button size="sm" className="!min-h-9" onClick={() => commit(defaultTouchLayout())}>
+            <Icon name="refresh" className="w-4 h-4" />
+            <span className="sr-only">{t('settings.resetPreset', { n: preset + 1 })}</span>
+          </Button>
+          <Button size="sm" variant="primary" className="!min-h-9" autoFocus onClick={() => setFull(false)} testId="layout-done">
+            {t('common.done')}
+          </Button>
         </div>
-        <Panel className="py-2 self-start">
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)] gap-3">
+      <div className="min-w-0">
+        {canvas('relative w-full max-w-[calc(52vh*16/9)] mx-auto aspect-video rounded-lg border-2 border-ink')}
+        <p className="text-xs text-muted mt-1">{t('settings.layoutHint')}</p>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Button variant="primary" onClick={() => setFull(true)} testId="layout-fullscreen">
+          {t('settings.editFull')}
+        </Button>
+        <Panel className="py-2">
+          <Segmented label={t('settings.preset')} value={preset} onChange={(p) => patch('controls', { preset: p })} options={[0, 1, 2].map((i) => ({ value: i, label: String(i + 1) }))} />
           <div className="px-3 pt-1 font-display font-extrabold text-lg text-sun">{t(`touch.${sel}`)}</div>
           <Slider label={t('settings.size')} value={cur.size} min={0.6} max={1.6} step={0.05} format={times} onChange={(size) => edit(sel, { size })} />
           <Slider label={t('settings.opacity')} value={cur.opacity} min={0.2} max={1} step={0.05} format={pct} onChange={(opacity) => edit(sel, { opacity })} />
@@ -506,9 +558,12 @@ export function SettingsScreen() {
   const s = useStore(app, (st) => st.settings);
   const [tab, setTab] = useState<TabId>('graphics');
   return (
-    <Page title={t('nav.settings')} testId="settings">
+    <Page
+      title={t('nav.settings')}
+      testId="settings"
+      toolbar={<Tabs value={tab} onChange={setTab} testIdPrefix="settings-tab-" className="max-w-5xl mx-auto" options={TABS.map((id) => ({ value: id, label: t(`settings.tab.${id}`) }))} />}
+    >
       <div className="flex flex-col gap-3 max-w-5xl mx-auto w-full">
-        <Tabs value={tab} onChange={setTab} testIdPrefix="settings-tab-" options={TABS.map((id) => ({ value: id, label: t(`settings.tab.${id}`) }))} />
         <div key={tab}>
           {tab === 'graphics' && <Graphics s={s} />}
           {tab === 'controls' && <Controls s={s} />}

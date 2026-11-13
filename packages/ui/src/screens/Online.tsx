@@ -79,10 +79,10 @@ export function Online() {
         </span>
       }
     >
-      <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 md:gap-4">
+      <div className="grid sm:grid-cols-2 gap-3 md:gap-4">
         <div className="flex flex-col gap-3">
           <Panel className="p-3 md:p-4">
-            <Button variant="primary" size="xl" className="w-full" testId="online-quick" autoFocus disabled={!!busy} onClick={() => run('quick', quickMatch)}>
+            <Button variant="primary" size="lg" className="w-full !min-h-16 md:!text-3xl" testId="online-quick" autoFocus disabled={!!busy} onClick={() => run('quick', quickMatch)}>
               {busy === 'quick' ? <Spinner className="!w-7 !h-7" /> : <Icon name="play" className="w-8 h-8" />}
               {busy === 'quick' ? t('menu.connecting') : t('online.quick')}
             </Button>

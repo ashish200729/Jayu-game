@@ -18,7 +18,8 @@ const secs = Number(process.argv[4] ?? 180);
 const out: Record<string, unknown> = {};
 const weaponKills: Record<string, number> = {};
 let fail = false;
-for (const mapId of mapIds()) {
+const only = process.argv[5];
+for (const mapId of mapIds().filter((m) => !only || only.split(',').includes(m))) {
   let red = 0;
   let blue = 0;
   let draws = 0;

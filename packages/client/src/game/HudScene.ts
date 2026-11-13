@@ -9,7 +9,6 @@ import { canvas, hex } from '../art/draw';
 import type { GameContext } from './context';
 
 const FONT = 'Baloo 2, system-ui, sans-serif';
-const INK = 0x1b1d26;
 
 type ButtonId = 'fire' | 'jet' | 'grenade' | 'swap' | 'reload' | 'melee' | 'zoom' | 'crouch' | 'emote' | 'pause' | 'score';
 

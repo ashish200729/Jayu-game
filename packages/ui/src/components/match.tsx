@@ -99,7 +99,7 @@ export function ModePicker({ value, modes, onChange }: { value: ModeId; modes: M
         <SelectCard key={m.id} selected={value === m.id} onClick={() => onChange(m.id)} testId={`mode-${m.id}`} className="p-2.5">
           <div className="flex items-center gap-2">
             <span className={`text-[0.65rem] font-extrabold px-1.5 py-0.5 rounded border-2 border-ink ${m.teams ? 'bg-sky text-ink' : 'bg-coral text-ink'}`}>{m.short}</span>
-            <span className="font-display font-extrabold leading-tight truncate">{modeName(m.id)}</span>
+            <span className="font-display font-extrabold leading-tight line-clamp-2">{modeName(m.id)}</span>
           </div>
           <p className="text-xs text-muted mt-1 leading-snug line-clamp-2">{t(`mode.${m.id}.desc`)}</p>
         </SelectCard>

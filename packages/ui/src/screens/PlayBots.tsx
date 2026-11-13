@@ -58,7 +58,7 @@ export function SurvivalSetup() {
         </Button>
       }
     >
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-4">
+      <div className="grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-3 md:gap-4">
         <Panel className="p-4 flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <span className="grid place-items-center w-12 h-12 rounded-md bg-sun text-ink border-2 border-ink shrink-0">
@@ -76,7 +76,7 @@ export function SurvivalSetup() {
           </ol>
           <div>
             <SectionTitle className="!text-base !px-0">{t('survival.upgrades')}</SectionTitle>
-            <ul className="grid sm:grid-cols-2 gap-1.5">
+            <ul className="grid grid-cols-2 gap-1.5">
               {UPGRADES.map((u) => (
                 <li key={u.id} className="rounded-md bg-panel-2 border-2 border-ink px-2.5 py-1.5">
                   <div className="font-bold text-sun text-sm leading-tight">{t(`upgrade.${u.id}`)}</div>

@@ -145,7 +145,7 @@ export function Results() {
               <Panel className="flex items-center gap-3 p-3">
                 <Avatar loadout={mvpLook} pose={POSES[mvpLook.pose] ?? 'salute'} size={96} team={teams ? mvp.team : -1} teamColor={TEAM_COLORS[cb][mvp.team === 1 ? 1 : 0]} animate={motionOk} />
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-sun uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-sun uppercase tracking-wider [:root[lang=hi]_&]:tracking-normal">
                     <Icon name="trophy" className="w-4 h-4" />
                     {t('results.mvp')}
                   </div>
@@ -199,7 +199,7 @@ export function Results() {
                 )}
                 {reward.completedChallenges.length > 0 && (
                   <div>
-                    <div className="text-xs font-extrabold text-mint uppercase tracking-wider mt-1">{t('results.challenges')}</div>
+                    <div className="text-xs font-extrabold text-mint uppercase tracking-wider [:root[lang=hi]_&]:tracking-normal mt-1">{t('results.challenges')}</div>
                     <ul className="text-sm">
                       {reward.completedChallenges.map((c) => (
                         <li key={c.id} className="flex justify-between gap-2">

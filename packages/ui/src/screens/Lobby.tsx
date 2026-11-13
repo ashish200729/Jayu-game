@@ -73,7 +73,7 @@ function Players({ lobby, sess }: { lobby: LobbyStateMsg; sess: SessionSnapshot 
     );
   }
   return (
-    <div className="grid sm:grid-cols-2 gap-3">
+    <div className="grid lg:grid-cols-2 gap-3">
       {[0, 1].map((team) => {
         const list = lobby.players.filter((p) => (team === 0 ? p.team !== 1 : p.team === 1));
         return (
@@ -138,7 +138,7 @@ function InviteCard({ code }: { code: string }) {
   };
   return (
     <Panel className="p-3">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider">{t('lobby.code')}</div>
+      <div className="text-xs font-bold text-muted uppercase tracking-wider [:root[lang=hi]_&]:tracking-normal">{t('lobby.code')}</div>
       <div className="font-mono font-extrabold text-4xl md:text-5xl tracking-[0.2em] text-sun select-text [user-select:text] leading-tight" data-testid="lobby-code">
         {code}
       </div>
@@ -250,16 +250,32 @@ export function Lobby() {
 
   return (
     <Page title={title} back={leaveSession} testId="lobby" actions={leave}>
-      <div className="grid md:grid-cols-[minmax(0,1.5fr)_minmax(16rem,1fr)] gap-3 md:gap-4">
-        <div className="order-2 md:order-1 min-w-0">
+      <div className="grid sm:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)] gap-3 md:gap-4">
+        <div className="order-2 sm:order-1 min-w-0">
           <Players lobby={lobby} sess={sess} />
         </div>
-        <aside className="order-1 md:order-2 flex flex-col gap-3 min-w-0">
+        <aside className="order-1 sm:order-2 flex flex-col gap-3 min-w-0">
           <StatusCard lobby={lobby} />
+          {inLobby && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant={me?.ready ? 'secondary' : 'mint'} size="lg" className="flex-1" testId="lobby-ready" autoFocus={!hostControls} onClick={() => lobbyAction({ a: 'ready', ready: !me?.ready })}>
+                {me?.ready ? <Icon name="x" className="w-5 h-5" /> : <Icon name="check" className="w-5 h-5" />}
+                {me?.ready ? t('lobby.unready') : t('lobby.ready')}
+              </Button>
+              {hostControls && (
+                <Button variant="primary" size="lg" className="flex-1" testId="lobby-start" autoFocus onClick={() => lobbyAction({ a: 'start' })}>
+                  <Icon name="play" className="w-5 h-5" />
+                  {t('common.start')}
+                </Button>
+              )}
+            </div>
+          )}
+          {inLobby && hostControls && !allReady && <p className="text-xs text-muted -mt-1">{t('lobby.notAllReady')}</p>}
+          {inLobby && !hostControls && !lobby.quickMatch && <p className="text-xs text-muted -mt-1">{t('lobby.waitHost')}</p>}
           {sess.kind === 'online' && !lobby.quickMatch && sess.code && <InviteCard code={sess.code} />}
           {sess.kind === 'lan-host' && (
             <Panel className="p-3">
-              <div className="text-xs font-bold text-muted uppercase tracking-wider">{t('lobby.lanAddresses')}</div>
+              <div className="text-xs font-bold text-muted uppercase tracking-wider [:root[lang=hi]_&]:tracking-normal">{t('lobby.lanAddresses')}</div>
               {sess.lanAddresses.length ? (
                 <ul className="font-mono font-bold text-lg text-sun select-text [user-select:text]">
                   {sess.lanAddresses.map((a) => (
@@ -283,22 +299,6 @@ export function Lobby() {
             </div>
             <SettingsSummary lobby={lobby} />
           </Panel>
-          {inLobby && (
-            <div className="flex flex-wrap gap-2">
-              <Button variant={me?.ready ? 'secondary' : 'mint'} size="lg" className="flex-1" testId="lobby-ready" autoFocus={!hostControls} onClick={() => lobbyAction({ a: 'ready', ready: !me?.ready })}>
-                {me?.ready ? <Icon name="x" className="w-5 h-5" /> : <Icon name="check" className="w-5 h-5" />}
-                {me?.ready ? t('lobby.unready') : t('lobby.ready')}
-              </Button>
-              {hostControls && (
-                <Button variant="primary" size="lg" className="flex-1" testId="lobby-start" autoFocus onClick={() => lobbyAction({ a: 'start' })}>
-                  <Icon name="play" className="w-5 h-5" />
-                  {t('common.start')}
-                </Button>
-              )}
-            </div>
-          )}
-          {inLobby && hostControls && !allReady && <p className="text-xs text-muted -mt-1">{t('lobby.notAllReady')}</p>}
-          {inLobby && !hostControls && !lobby.quickMatch && <p className="text-xs text-muted -mt-1">{t('lobby.waitHost')}</p>}
         </aside>
       </div>
       <Modal open={editing} onClose={() => setEditing(false)} title={t('lobby.settings')} testId="lobby-settings">

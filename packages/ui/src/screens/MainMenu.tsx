@@ -170,10 +170,10 @@ export function MainMenu() {
         {/* Showcase */}
         <section className="relative flex flex-col items-center justify-center min-h-0 h-full">
           <div className="text-center leading-none select-none">
-            <div className="font-display font-extrabold text-sun text-[clamp(2.4rem,9vh,7rem)] tracking-wider drop-shadow-[0_5px_0_var(--color-ink)] [-webkit-text-stroke:2px_var(--color-ink)]">
+            <div className="font-display font-extrabold text-sun text-[clamp(2.4rem,9vh,7rem)] tracking-wider [:root[lang=hi]_&]:tracking-normal [:root[lang=hi]_&]:leading-[1.3] drop-shadow-[0_5px_0_var(--color-ink)] [-webkit-text-stroke:2px_var(--color-ink)]">
               {t('app.name').toUpperCase()}
             </div>
-            <div className="font-display font-bold text-text/90 text-[clamp(0.85rem,2.6vh,1.6rem)] tracking-[0.25em] uppercase -mt-1">{t('app.tagline')}</div>
+            <div className="font-display font-bold text-text/90 text-[clamp(0.85rem,2.6vh,1.6rem)] tracking-[0.25em] [:root[lang=hi]_&]:tracking-normal [:root[lang=hi]_&]:mt-0 uppercase -mt-1">{t('app.tagline')}</div>
           </div>
           <button
             type="button"

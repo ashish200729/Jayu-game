@@ -1,3 +1,4 @@
+import { onboard } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 async function freshStart(page: Page) {
@@ -10,27 +11,17 @@ async function freshStart(page: Page) {
   return errors;
 }
 
-async function setName(page: Page, name = 'Tester') {
-  const input = page.getByTestId('name-input');
-  if (await input.isVisible({ timeout: 4000 }).catch(() => false)) {
-    await input.fill(name);
-    await page.getByTestId('name-save').click();
-    // Dismiss the tutorial offer if it appears.
-    const later = page.getByRole('button', { name: /later|not now|skip/i });
-    if (await later.isVisible({ timeout: 1500 }).catch(() => false)) await later.click();
-  }
-}
 
 test('first launch → menu with no errors', async ({ page }) => {
   const errors = await freshStart(page);
   await expect(page.getByTestId('main-menu')).toBeVisible();
-  await setName(page);
+  await onboard(page);
   expect(errors).toEqual([]);
 });
 
 test('bot match → results → armoury → settings persist', async ({ page }) => {
   const errors = await freshStart(page);
-  await setName(page);
+  await onboard(page);
   await page.getByTestId('mode-bots').click();
   await page.getByTestId('map-underground-lab').click();
   await page.getByTestId('bots-start').click();
@@ -47,6 +38,7 @@ test('bot match → results → armoury → settings persist', async ({ page }) 
   await page.getByTestId('nav-settings').click();
   await page.getByTestId('settings-tab-language').click();
   await page.getByTestId('lang-hi').click();
+  await page.waitForTimeout(1000);
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'hi');
   expect(errors).toEqual([]);

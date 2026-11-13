@@ -102,8 +102,11 @@ function findPath(nav: NavGrid, sx: number, sy: number, gx: number, gy: number, 
     }
     const x = c % w;
     const y = (c - x) / w;
-    const nb = [c + 1, c - 1, c - w, c + w];
-    const ok = [x + 1 < w, x > 0, y > 1, y + 1 < h];
+    // Mirror-symmetric expansion order (toward the goal's side first) so left and right teams
+    // get equivalent paths on mirrored maps.
+    const right = gx >= sx;
+    const nb = right ? [c + 1, c - 1, c - w, c + w] : [c - 1, c + 1, c - w, c + w];
+    const ok = right ? [x + 1 < w, x > 0, y > 1, y + 1 < h] : [x > 0, x + 1 < w, y > 1, y + 1 < h];
     for (let k = 0; k < 4; k++) {
       if (!ok[k]) continue;
       const j = nb[k];

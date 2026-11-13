@@ -176,7 +176,7 @@ export function Profile() {
         )}
 
         {tab === 'challenges' && (
-          <div className="grid md:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3">
             <Panel className="p-3">
               <div className="flex items-baseline justify-between">
                 <SectionTitle className="!px-0">{t('profile.daily')}</SectionTitle>

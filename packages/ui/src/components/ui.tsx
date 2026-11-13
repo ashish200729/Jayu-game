@@ -161,7 +161,7 @@ export function useEscape(fn: (() => void) | null): void {
 }
 
 /** Full-screen page with a title bar and back button. `back={null}` hides the back button. Escape = back. */
-export function Page({ title, children, back = 'menu', actions, testId }: { title: string; children: ReactNode; back?: Screen | (() => void) | null; actions?: ReactNode; testId?: string }) {
+export function Page({ title, children, back = 'menu', actions, testId, toolbar }: { title: string; children: ReactNode; back?: Screen | (() => void) | null; actions?: ReactNode; testId?: string; toolbar?: ReactNode }) {
   const reduce = useStore(app, (s) => s.settings.accessibility.reduceMotion);
   const goBack = back === null ? null : () => (typeof back === 'function' ? back() : go(back));
   useEscape(goBack);
@@ -183,6 +183,7 @@ export function Page({ title, children, back = 'menu', actions, testId }: { titl
         <h1 className="font-display font-extrabold text-2xl md:text-3xl text-sun drop-shadow-[0_3px_0_var(--color-ink)] truncate min-w-0">{title}</h1>
         <div className="ml-auto flex items-center gap-2 shrink-0">{actions}</div>
       </header>
+      {toolbar && <div className="shrink-0 mb-2">{toolbar}</div>}
       <div className="flex-1 min-h-0 overflow-auto overscroll-contain -mx-1 px-1 pb-2 [touch-action:pan-y]">{children}</div>
     </motion.div>
   );
