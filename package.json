@@ -1,0 +1,50 @@
+{
+  "name": "jayu",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @game/app",
+    "dev:server": "npm run dev -w @game/server",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "maps:build": "tsx packages/maps/scripts/build-maps.ts",
+    "maps:validate": "tsx packages/maps/scripts/validate-maps.ts",
+    "build:web": "npm run build -w @game/app",
+    "build:server": "npm run build -w @game/server",
+    "build:android": "npm run build:web && npx cap sync android && cd android && ./gradlew bundleRelease",
+    "build:ios": "npm run build:web && npx cap sync ios && echo 'Open ios/App/App.xcworkspace in Xcode 26+ and Archive'",
+    "start:server": "node apps/server/dist/server.mjs",
+    "bench": "tsx tests/bench/bench.ts",
+    "balance": "tsx tests/balance/balance.ts",
+    "test:net": "vitest run tests/netcode",
+    "soak": "tsx tests/soak/soak.ts",
+    "load": "tsx tests/load/load.ts",
+    "e2e": "playwright test --trace off",
+    "test:all": "npm run check && npm run maps:validate && npm run build:web && npm run build:server && npm run e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "prettier": "3.10.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  }
+}

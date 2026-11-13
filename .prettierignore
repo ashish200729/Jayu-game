@@ -1,0 +1,7 @@
+node_modules
+dist
+android
+ios
+packages/maps/tmj
+package-lock.json
+docs/bench
