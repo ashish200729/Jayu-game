@@ -35,3 +35,22 @@ you fire); respawn 3 s; spawn choice maximises distance to enemies and avoids sp
 `npm run balance -- <matchesPerMap> tdm 180` writes `docs/bench/balance-*.json` with per-map red-team win rate
 (target 45–55 %), weapon kill counts (every weapon must be used) and spawn-kill rate. All team maps are
 mirrored left/right, so differences come only from bot randomness. Latest results are committed in docs/bench.
+
+### Latest run (200 matches/map, TDM, 180 s, 6 bots, after the update-order fix)
+| Map | Red win % | First kill (s) |
+|---|---|---|
+| training-grounds | 50.5 | 5.8 |
+| rooftop-dusk | 51.5 | 7.0 |
+| jungle-temple | 46.7 | 8.5 |
+| snow-outpost | 44.0 | 6.2 |
+| desert-canyon | 46.5 | 8.2 |
+| orbital-station | 46.0 | 6.8 |
+| shipyard | 56.0 | 7.3 |
+| underground-lab | 52.5 | 6.8 |
+| volcano-base | 45.0 | 6.5 |
+| haunted-fortress | 48.0 | 8.1 |
+
+8/10 inside 45–55 %. The two outliers lean in opposite directions at ~1.7σ (σ ≈ 3.5 % at n = 200) on
+mirror-symmetric maps, consistent with sampling noise; before the per-tick update-order rotation, every
+outlier favoured red (first-mover bias, up to 60.5 %). All 13 weapons register kills; spawn-kill rate < 5 %
+on every map except the small training arena (9 %). Hornet dominates kill counts because every player spawns with it.
