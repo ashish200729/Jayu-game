@@ -121,6 +121,8 @@ export class MatchHost {
   results: MatchResults | null = null;
   inputLog: InputLogEntry[] = [];
   hashes: number[] = [];
+  /** Players present when the match started (for deterministic replays). */
+  startRoster: { id: number; name: string; team: number; isBot: boolean; difficulty: number; loadout: Loadout }[] = [];
   private peers = new Map<string, PeerState>();
   private slots: Slot[] = [];
   private nextPlayerId = 1;
@@ -637,6 +639,12 @@ export class MatchHost {
       peer.sent.clear();
       peer.sentOrder = [];
     }
+    this.startRoster = sim.players
+      .filter((p) => !p.dummy)
+      .map((p) => {
+        const slot = this.slots.find((x) => x.id === p.id);
+        return { id: p.id, name: p.name, team: p.team, isBot: p.isBot, difficulty: p.difficulty, loadout: slot ? slot.loadout : { ...DEFAULT_LOADOUT } };
+      });
     this.rosterVersion++;
     this.phase = 'playing';
     this.lobbyDirty = true;
