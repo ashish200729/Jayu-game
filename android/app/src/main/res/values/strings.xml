@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jayu</string>
+    <string name="title_activity_main">Jayu</string>
+    <string name="package_name">com.jayu.jetbrawl</string>
+    <string name="custom_url_scheme">com.jayu.jetbrawl</string>
+</resources>

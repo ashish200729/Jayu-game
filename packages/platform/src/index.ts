@@ -106,7 +106,12 @@ export async function haptic(kind: HapticKind): Promise<void> {
       if (kind === 'success') await Haptics.notification({ type: NotificationType.Success });
       else if (kind === 'warning') await Haptics.notification({ type: NotificationType.Warning });
       else await Haptics.impact({ style: kind === 'light' ? ImpactStyle.Light : kind === 'medium' ? ImpactStyle.Medium : ImpactStyle.Heavy });
-    } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    } else if (
+      typeof navigator !== 'undefined' &&
+      'vibrate' in navigator &&
+      // Browsers block (and log) vibration before the user has interacted with the page.
+      (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive
+    ) {
       navigator.vibrate(kind === 'light' ? 8 : kind === 'medium' ? 16 : 30);
     }
   } catch {

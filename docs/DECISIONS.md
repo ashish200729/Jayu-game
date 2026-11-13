@@ -1,0 +1,19 @@
+# Decisions log
+
+| Date | Decision | Reason |
+|---|---|---|
+| 2026-11-13 | Name **Jayu: Jetpack Brawl**, bundle id `com.jayu.jetbrawl`, server region `ap-south` (Mumbai) | Repo is "jayu-game"; placeholders were not filled in. Final name/icon/bundle id need human approval and a store search. |
+| 2026-11-13 | Pinned versions: TypeScript 5.9.3, Vite 8.3.8, Vitest 5.1.0, Phaser 4.2.1, React 19.3.1, Tailwind 4.3.5, Motion 14.13.0, Colyseus core 0.18.28 / ws-transport 0.18.5 / sdk 0.18.10, Capacitor 8.6.2, vite-plugin-pwa 2.0.0, ESLint 10.14.0, Playwright 1.63.0 | Latest stable at build time. TypeScript 7 (Go port) skipped: typescript-eslint supports < 6.1. Playwright pinned to the pre-installed browsers. |
+| 2026-11-13 | Own prediction/interpolation/lag-compensation in `@game/net` instead of Colyseus 0.18's built-in APIs; Colyseus provides rooms, matchmaking and the WebSocket transport (binary `sendBytes`). | LAN play must behave identically without a Colyseus server; one netcode path for local, online and LAN, tested by the determinism suite. |
+| 2026-11-13 | Deterministic math (table sin/cos, polynomial atan2, 1/8 px quantised state) | Math.sin/atan2 are not bit-identical across V8/JavaScriptCore; quantised state makes snapshots exact. |
+| 2026-11-13 | Lag-compensation cap raised from 200 ms to 333 ms (20 ticks) | At 150 ms RTT the shooter's view is ~225–280 ms behind (RTT + 100 ms interpolation + input buffer); a 200 ms cap missed shots that looked like hits. Measured hit registration: 83 % with the heron rifle on moving bots (misses are real occlusion), vs 37 % at 200 ms. |
+| 2026-11-13 | Snapshot rates 20 Hz online / 30 Hz LAN / 60 Hz offline; inputs at 30 packets/s with 5-input redundancy | Meets bandwidth budget (10 KB/s down for 12 players). |
+| 2026-11-13 | All art and audio generated procedurally in code (canvas + WebAudio synthesis) | 100 % original, no licensing risk, tiny download (no texture/audio files). |
+| 2026-11-13 | Audio through own WebAudio engine instead of Phaser's sound manager | Sounds are synthesised buffers; one engine serves menus (React) and the game (Phaser). |
+| 2026-11-13 | Maps authored as ASCII sources compiled to Tiled 1.10 `.tmj` (committed) | Fast iteration + validator; `.tmj` stays editable in Tiled (`loadTmj` reads the same layers). All maps are left/right mirrored for team fairness. |
+| 2026-11-13 | Monetisation: free, no real-money purchases enabled. Cosmetics unlock by level or soft currency (Sparks) earned by playing; store shows "Store unavailable" for paid items | Spec requires human approval before enabling purchases (StoreKit 2 / Play Billing need accounts). No loot boxes. |
+| 2026-11-13 | Communication: quick-chat presets + emotes only, local mute, report endpoint | Avoids UGC moderation requirements at launch. |
+| 2026-11-13 | Guest profile stored locally (Preferences on native, IndexedDB on web) with a backup copy; cloud copy keyed by random id+secret via `/api/profile/sync` (JSON file store) | No accounts at launch (M10). Swap the file store for a database when scaling past one server process. |
+| 2026-11-13 | LAN host phone's own player joins in-process (not over UDP loopback) | Avoids mixing host/client plugin socket events; lower latency for the host. |
+| 2026-11-13 | Hot Potato: weapons knock back but do not damage; hitting someone passes the bomb | Keeps the mode about the bomb; no respawns (last one standing). |
+| 2026-11-13 | Fonts: Baloo 2 (display, Latin + Devanagari), Nunito (UI), Noto Sans Devanagari (Hindi body), bundled via @fontsource (OFL) | Open licence, work offline, cover Hindi. |

@@ -336,7 +336,7 @@ export class BotBrain {
       const nd = WEAPONS[near.wi];
       const cur = me.slots[nd.slot === 'sidearm' ? 0 : 1];
       const curDef = cur.wi >= 0 ? WEAPONS[cur.wi] : null;
-      const better = !curDef || (nd.slot === 'heavy' && curDef.slot !== 'heavy') || (curDef.id === 'hornet' && nd.slot === 'primary') || cur.reserve === 0;
+      const better = !curDef || (nd.slot === 'heavy' && curDef.slot !== 'heavy') || (curDef.id === 'hornet' && nd.slot === 'primary') || (curDef.id === 'sparrow' && nd.slot === 'sidearm') || cur.reserve === 0;
       if (better) this.actions = bumpCounter(this.actions, ACT_SWAP);
     }
     inp.actions = this.actions;
@@ -436,7 +436,7 @@ export class BotBrain {
     }
     if (tgt && tgt.alive) return setGoal(tgt.x, tgt.y);
     // Without a target, collect weapons or wander between spawns.
-    if (me.slots[1].wi < 0 || WEAPONS[me.slots[1].wi]?.id === 'hornet') {
+    if (me.slots[1].wi < 0 || WEAPONS[me.slots[1].wi]?.id === 'hornet' || (me.slots[0].wi >= 0 && WEAPONS[me.slots[0].wi]?.id === 'sparrow' && this.id % 4 === 0)) {
       const w = this.nearestSpawner(sim, me, (k) => k === 'weapon' || k === 'heavy');
       if (w) return setGoal(w.x, w.y);
     }

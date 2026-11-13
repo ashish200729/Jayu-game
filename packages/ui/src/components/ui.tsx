@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { audio } from '@game/client/audio';
 import { haptic } from '@game/platform';
 import { app, go, type Screen } from '../core/app';
@@ -137,9 +137,34 @@ export function Segmented<T extends string | number>({ value, options, onChange,
   );
 }
 
-/** Full-screen page with a title bar and back button. */
-export function Page({ title, children, back = 'menu', actions, testId }: { title: string; children: ReactNode; back?: Screen | (() => void); actions?: ReactNode; testId?: string }) {
+/** True when a modal dialog is open (Escape then belongs to the dialog). */
+function dialogOpen(): boolean {
+  return typeof document !== 'undefined' && !!document.querySelector('[role="dialog"]');
+}
+
+/** Run `fn` when Escape is pressed and no dialog is open. */
+export function useEscape(fn: (() => void) | null): void {
+  const ref = useRef(fn);
+  useEffect(() => {
+    ref.current = fn;
+  });
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || !ref.current || dialogOpen()) return;
+      e.preventDefault();
+      sfx('ui_back');
+      ref.current();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, []);
+}
+
+/** Full-screen page with a title bar and back button. `back={null}` hides the back button. Escape = back. */
+export function Page({ title, children, back = 'menu', actions, testId }: { title: string; children: ReactNode; back?: Screen | (() => void) | null; actions?: ReactNode; testId?: string }) {
   const reduce = useStore(app, (s) => s.settings.accessibility.reduceMotion);
+  const goBack = back === null ? null : () => (typeof back === 'function' ? back() : go(back));
+  useEscape(goBack);
   return (
     <motion.div
       data-testid={testId}
@@ -149,21 +174,16 @@ export function Page({ title, children, back = 'menu', actions, testId }: { titl
       transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
       className="absolute inset-0 flex flex-col safe"
     >
-      <header className="flex items-center gap-3 mb-3 shrink-0">
-        <Button
-          variant="secondary"
-          size="sm"
-          sound="ui_back"
-          testId="back"
-          onClick={() => (typeof back === 'function' ? back() : go(back))}
-          className="!min-h-11 !px-3"
-        >
-          ← {t('common.back')}
-        </Button>
-        <h1 className="font-display font-extrabold text-2xl md:text-3xl text-sun drop-shadow-[0_3px_0_#1b1d26] truncate">{title}</h1>
-        <div className="ml-auto flex gap-2">{actions}</div>
+      <header className="flex items-center gap-3 mb-2 shrink-0 min-h-11">
+        {goBack && (
+          <Button variant="secondary" size="sm" sound="ui_back" testId="back" onClick={goBack} className="!min-h-11 !px-3 shrink-0">
+            <span aria-hidden="true">←</span> {t('common.back')}
+          </Button>
+        )}
+        <h1 className="font-display font-extrabold text-2xl md:text-3xl text-sun drop-shadow-[0_3px_0_var(--color-ink)] truncate min-w-0">{title}</h1>
+        <div className="ml-auto flex items-center gap-2 shrink-0">{actions}</div>
       </header>
-      <div className="flex-1 min-h-0 overflow-auto">{children}</div>
+      <div className="flex-1 min-h-0 overflow-auto overscroll-contain -mx-1 px-1 pb-2 [touch-action:pan-y]">{children}</div>
     </motion.div>
   );
 }
@@ -230,4 +250,192 @@ export function Toasts() {
 
 export function Chip({ children, color = 'bg-panel-2' }: { children: ReactNode; color?: string }) {
   return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border-2 border-ink text-xs font-bold ${color}`}>{children}</span>;
+}
+
+/** Horizontal tab strip (scrolls on narrow screens). */
+export function Tabs<T extends string>({ value, options, onChange, testIdPrefix, className = '' }: { value: T; options: { value: T; label: string; badge?: ReactNode }[]; onChange: (v: T) => void; testIdPrefix?: string; className?: string }) {
+  return (
+    <div role="tablist" className={`flex gap-1.5 overflow-x-auto pb-1 -mb-1 [touch-action:pan-x] ${className}`}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            type="button"
+            role="tab"
+            key={o.value}
+            aria-selected={on}
+            data-testid={testIdPrefix ? `${testIdPrefix}${o.value}` : undefined}
+            onClick={() => {
+              if (!on) sfx('ui_toggle');
+              onChange(o.value);
+            }}
+            className={`shrink-0 min-h-11 px-4 rounded-md border-2 border-ink font-display font-bold text-base whitespace-nowrap transition-all duration-[var(--duration-fast)] inline-flex items-center gap-2 ${on ? 'bg-sun text-ink shadow-chunky' : 'bg-panel-2 text-text hover:bg-line'}`}
+          >
+            {o.label}
+            {o.badge}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Single-line text input with the chunky look. */
+export function TextInput({
+  value,
+  onChange,
+  label,
+  placeholder,
+  maxLength,
+  testId,
+  autoFocus,
+  onEnter,
+  inputMode,
+  uppercase,
+  invalid,
+  className = '',
+  mono,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
+  placeholder?: string;
+  maxLength?: number;
+  testId?: string;
+  autoFocus?: boolean;
+  onEnter?: () => void;
+  inputMode?: 'text' | 'numeric' | 'decimal' | 'url';
+  uppercase?: boolean;
+  invalid?: boolean;
+  className?: string;
+  mono?: boolean;
+}) {
+  return (
+    <label className={`flex flex-col gap-1 min-w-0 ${className}`}>
+      {label && <span className="text-sm font-bold text-muted">{label}</span>}
+      <input
+        type="text"
+        value={value}
+        data-testid={testId}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        autoFocus={autoFocus}
+        inputMode={inputMode}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize={uppercase ? 'characters' : 'off'}
+        spellCheck={false}
+        aria-invalid={invalid || undefined}
+        onChange={(e) => onChange(uppercase ? e.target.value.toUpperCase() : e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && onEnter) {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+        className={`min-h-12 w-full px-3 rounded-md border-2 bg-night text-text text-lg font-bold placeholder:text-muted/60 placeholder:font-normal select-text [user-select:text] focus:outline-none focus:border-sky ${invalid ? 'border-danger' : 'border-ink'} ${mono ? 'font-mono tracking-[0.3em]' : ''}`}
+      />
+    </label>
+  );
+}
+
+/** Horizontal progress bar (0..1). */
+export function ProgressBar({ value, color = 'bg-sun', className = '', label }: { value: number; color?: string; className?: string; label?: string }) {
+  const v = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
+  return (
+    <div className={`h-3 rounded-full bg-night border-2 border-ink overflow-hidden ${className}`} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)}>
+      <div className={`h-full ${color} rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-snap)]`} style={{ width: `${v * 100}%` }} />
+    </div>
+  );
+}
+
+/** Number stepper with − / + buttons. */
+export function Stepper({ value, onChange, label, min, max, step = 1, format, testId }: { value: number; onChange: (v: number) => void; label: string; min: number; max: number; step?: number; format?: (v: number) => string; testId?: string }) {
+  const set = (v: number) => {
+    const n = Math.max(min, Math.min(max, v));
+    if (n !== value) {
+      sfx('ui_toggle');
+      onChange(n);
+    }
+  };
+  return (
+    <div className="flex items-center justify-between gap-4 w-full min-h-12 px-3" data-testid={testId}>
+      <span className="text-text">{label}</span>
+      <div className="flex items-center gap-1" role="group" aria-label={label}>
+        <button type="button" aria-label="−" disabled={value <= min} onClick={() => set(value - step)} className="w-11 h-11 rounded-md border-2 border-ink bg-panel-2 hover:bg-line font-display font-extrabold text-xl disabled:opacity-40">
+          −
+        </button>
+        <span className="min-w-14 text-center font-display font-extrabold text-xl tabular-nums" aria-live="polite">
+          {format ? format(value) : value}
+        </span>
+        <button type="button" aria-label="+" disabled={value >= max} onClick={() => set(value + step)} className="w-11 h-11 rounded-md border-2 border-ink bg-panel-2 hover:bg-line font-display font-extrabold text-xl disabled:opacity-40">
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function Spinner({ className = '' }: { className?: string }) {
+  return <span aria-hidden="true" className={`inline-block w-8 h-8 rounded-full border-4 border-line border-t-sun animate-spin ${className}`} />;
+}
+
+/** Small uppercase heading inside panels. */
+export function SectionTitle({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <h2 className={`font-display font-extrabold text-lg text-sun px-1 mb-1 ${className}`}>{children}</h2>;
+}
+
+/** Selectable card (map, mode, item). */
+export function SelectCard({ selected, onClick, children, className = '', testId, disabled, title }: { selected?: boolean; onClick: () => void; children: ReactNode; className?: string; testId?: string; disabled?: boolean; title?: string }) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={selected}
+      disabled={disabled}
+      title={title}
+      onPointerEnter={() => !disabled && sfx('ui_hover')}
+      onClick={() => {
+        sfx('ui_toggle');
+        onClick();
+      }}
+      className={`relative text-left rounded-lg border-2 border-ink overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-snap)] disabled:opacity-50 ${selected ? 'bg-panel-2 ring-4 ring-sun shadow-chunky -translate-y-0.5' : 'bg-panel hover:bg-panel-2 shadow-chunky hover:-translate-y-0.5'} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Sparks currency badge. */
+export function SparksBadge({ n, className = '' }: { n: number; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 min-h-8 rounded-full border-2 border-ink bg-panel-2 font-display font-extrabold text-sun tabular-nums ${className}`} title={t('common.sparks', { n })}>
+      <SparkIcon />
+      {n.toLocaleString()}
+    </span>
+  );
+}
+
+export function SparkIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+      <path d="M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z" fill="var(--color-sun)" stroke="var(--color-ink)" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Window size in CSS pixels (updates on resize/rotation). */
+export function useViewport(): { w: number; h: number } {
+  const [v, setV] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
+  useEffect(() => {
+    const h = () => setV({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  return v;
+}
+
+/** Whether decorative animation should run (honours the in-game reduce-motion setting). */
+export function useMotionOk(): boolean {
+  return !useStore(app, (s) => s.settings.accessibility.reduceMotion);
 }

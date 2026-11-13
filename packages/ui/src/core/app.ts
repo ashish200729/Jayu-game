@@ -191,8 +191,8 @@ function httpBase(): string {
   return region.url.replace(/^ws/, 'http');
 }
 
-/** Sync the guest profile with the server copy (newer syncVersion wins). Silent when offline. */
-export async function cloudSync(): Promise<void> {
+/** Sync the guest profile with the server copy (newer syncVersion wins). Silent when offline; resolves to whether the server answered. */
+export async function cloudSync(): Promise<boolean> {
   const p = app.get().profile;
   try {
     const ctrl = new AbortController();
@@ -204,15 +204,17 @@ export async function cloudSync(): Promise<void> {
       signal: ctrl.signal,
     });
     clearTimeout(timer);
-    if (!res.ok) return;
+    if (!res.ok) return false;
     const body = (await res.json()) as { ok: boolean; profile?: unknown; version?: number };
     if (body.ok && body.version && body.version > p.syncVersion && body.profile) {
       const remote = migrateProfile(body.profile);
       app.set({ profile: remote });
       scheduleSave();
     }
+    return !!body.ok;
   } catch {
     // offline: keep local profile
+    return false;
   }
 }
 
@@ -390,11 +392,27 @@ async function tryReconnect(s: ActiveSession): Promise<void> {
   }
 }
 
+/** Keep the best jetpack-course time from a training session in the profile. */
+function recordCourseTime(s: ActiveSession): void {
+  if (s.purpose !== 'training') return;
+  try {
+    const me = s.client.view()?.me;
+    const best = me?.bestCourse ?? 0;
+    if (best > 0) {
+      const prev = app.get().profile.stats.bestCourseTicks;
+      if (!prev || best < prev) updateProfile((p) => ({ ...p, stats: { ...p.stats, bestCourseTicks: best } }));
+    }
+  } catch {
+    // no view yet
+  }
+}
+
 export function endSession(): void {
   if (raf) cancelAnimationFrame(raf);
   raf = 0;
   if (active) {
     const a = active;
+    recordCourseTime(a);
     active = null;
     try {
       a.close();
@@ -408,6 +426,33 @@ export function endSession(): void {
 export function leaveSession(): void {
   endSession();
   go('menu');
+}
+
+/**
+ * "Play again" from the results screen: replays an offline match, asks the host for a rematch in a
+ * private/LAN room, or queues a fresh quick match.
+ */
+export async function rematch(): Promise<void> {
+  const st = app.get();
+  const sess = st.session;
+  if (!sess || sess.kind === 'offline') {
+    if (st.lastOffline) startOffline(st.lastOffline.settings, st.lastOffline.purpose);
+    else go('menu');
+    return;
+  }
+  if (sess.lobby?.quickMatch) {
+    endSession();
+    go('online');
+    try {
+      await quickMatch();
+      go('lobby');
+    } catch {
+      // toast already shown
+    }
+    return;
+  }
+  if (sess.isHost) lobbyAction({ a: 'rematch' });
+  go('lobby');
 }
 
 /** Pause/resume an offline match (online matches keep running behind the pause menu). */

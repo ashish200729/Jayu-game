@@ -1,0 +1,4 @@
+# Replace play.example.com with your server's domain (DNS A record → this VPS).
+play.example.com {
+  reverse_proxy jayu-server:2567
+}

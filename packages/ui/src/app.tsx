@@ -2,10 +2,12 @@ import { AnimatePresence } from 'motion/react';
 import { lazy, Suspense, useEffect } from 'react';
 import { audio } from '@game/client/audio';
 import { initLifecycle, initNativeShell, isNative, webglAvailable } from '@game/platform';
-import { app, currentSession, go, loadPersisted, measurePings, setPaused, type Screen } from './core/app';
+import { app, currentSession, go, joinPrivateRoom, loadPersisted, measurePings, setPaused, startOffline, type Screen } from './core/app';
+import type { LobbySettings } from '@game/net';
 import { useStore } from './core/store';
 import { t } from './i18n';
 import { Button, Toasts } from './components/ui';
+import { useGamepadNav } from './components/gamepad';
 import { GameScreen } from './screens/GameScreen';
 import { MainMenu } from './screens/MainMenu';
 
@@ -53,7 +55,14 @@ export async function boot(): Promise<void> {
   applyPrefs();
   app.subscribe(applyPrefs);
   go('menu');
+  // Invite links (?join=CODE) open the online screen with the code filled in, once a name is set.
+  try {
+    if (/^[A-Z2-9]{6}$/i.test(new URLSearchParams(location.search).get('join') ?? '') && app.get().profile.name) go('online');
+  } catch {
+    // no location (tests)
+  }
   void measurePings();
+  handleDeepLink();
   if (!isNative && 'serviceWorker' in navigator && import.meta.env.PROD) {
     try {
       const { Workbox } = await import('workbox-window');
@@ -70,6 +79,39 @@ export async function boot(): Promise<void> {
       // service worker unavailable
     }
   }
+}
+
+/**
+ * Deep links: `?join=CODE` opens an online invite; `?play=map:mode:bots[:difficulty]` starts an offline
+ * match directly (used by automated tests and the benchmark).
+ */
+function handleDeepLink(): void {
+  const q = new URLSearchParams(location.search);
+  const join = q.get('join');
+  const play = q.get('play');
+  if (join && /^[A-Za-z2-9]{6}$/.test(join)) {
+    if (!app.get().profile.name) updateProfileName();
+    void joinPrivateRoom(join.toUpperCase()).catch(() => go('online'));
+  } else if (play) {
+    const [mapId, mode, bots, diff] = play.split(':');
+    if (!app.get().profile.name) updateProfileName();
+    const purpose = mode === 'training' ? (q.get('tutorial') ? 'tutorial' : 'training') : 'match';
+    startOffline(
+      {
+        mapId: mapId || 'training-grounds',
+        mode: (mode || 'ffa') as LobbySettings['mode'],
+        botCount: Math.max(0, Math.min(11, Number(bots ?? 3) || 0)),
+        botDifficulty: (Math.max(0, Math.min(2, Number(diff ?? 1) || 0)) as 0 | 1 | 2),
+        timeLimit: Number(q.get('time') ?? 300) || 300,
+      },
+      purpose,
+    );
+  }
+  if (join || play) history.replaceState(null, '', location.pathname);
+}
+
+function updateProfileName(): void {
+  app.set((s) => ({ profile: { ...s.profile, name: s.profile.name || 'Player' } }));
 }
 
 let lastPrefs = '';
@@ -126,6 +168,7 @@ export function App() {
   const webgl = useStore(app, (s) => s.webgl);
   const updateReady = useStore(app, (s) => s.updateReady);
   useStore(app, (s) => s.settings.language); // re-render on language change
+  useGamepadNav(screen !== 'game');
   useEffect(() => {
     const unlock = () => audio.unlock();
     window.addEventListener('pointerdown', unlock, { once: true });

@@ -1,0 +1,28 @@
+# Plain-VPS deployment: docker compose -f deploy/docker-compose.yml up -d
+# Put Caddy (or any TLS proxy) in front so browsers can use wss:// (see docs/DEPLOY.md).
+services:
+  jayu-server:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 7m
+    environment:
+      REGION: ap-south
+      CORS_ORIGIN: '*'
+    volumes:
+      - jayu-data:/data
+    ports:
+      - '2567:2567'
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+volumes:
+  jayu-data:
+  caddy-data:
