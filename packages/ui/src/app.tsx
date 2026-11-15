@@ -29,9 +29,10 @@ let applyUpdate: (() => void) | null = null;
 
 /** App start: storage, native shell, lifecycle, service worker. */
 export async function boot(): Promise<void> {
+  // Native shell first and never awaited: the splash must go away even if a later step stalls.
+  void initNativeShell();
   app.set({ webgl: webglAvailable() });
   await loadPersisted();
-  void initNativeShell();
   void initLifecycle({
     onPause: () => {
       audio.suspend();

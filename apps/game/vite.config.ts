@@ -38,7 +38,8 @@ export default defineConfig({
     }),
   ],
   build: {
-    target: 'es2022',
+    // Android System WebView on older phones lags behind; Chrome 87 covers Android 7+ devices with updated WebView.
+    target: ['es2020', 'chrome87', 'safari14'],
     sourcemap: false,
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
