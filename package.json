@@ -25,7 +25,7 @@
     "build:server": "npm run build -w @game/server",
     "build:android": "npm run build:web && npx cap sync android && cd android && ./gradlew bundleRelease",
     "build:ios": "npm run build:web && npx cap sync ios && echo 'Open ios/App/App.xcworkspace in Xcode 26+ and Archive'",
-    "start:server": "node apps/server/dist/server.mjs",
+    "start:server": "node apps/server/dist/main.js",
     "bench": "tsx tests/bench/bench.ts",
     "balance": "tsx tests/balance/balance.ts",
     "test:net": "vitest run tests/netcode",

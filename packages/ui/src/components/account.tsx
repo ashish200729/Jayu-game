@@ -35,8 +35,8 @@ export function AccountPanel({ links = false }: { links?: boolean }) {
       <SectionTitle className="!px-0 !mb-0">{t('account.title')}</SectionTitle>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm text-muted">{t('account.guestId')}</div>
-          <div className="font-mono font-extrabold text-xl tracking-widest" data-testid="guest-id">
+          <div className="eyebrow">{t('account.guestId')}</div>
+          <div className="font-mono font-extrabold text-2xl tracking-[0.25em] text-sun" data-testid="guest-id">
             {id.slice(0, 6).toUpperCase()}
           </div>
         </div>
@@ -60,7 +60,7 @@ export function AccountPanel({ links = false }: { links?: boolean }) {
           )}
         </div>
       )}
-      <div className="border-t-2 border-line pt-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="border-t border-white/10 pt-3 flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm text-muted max-w-md">{t('account.deleteBody')}</span>
         <Button variant="danger" onClick={() => setConfirm(true)} testId="account-delete">
           {t('account.delete')}

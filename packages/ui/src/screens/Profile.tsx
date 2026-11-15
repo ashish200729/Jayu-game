@@ -15,9 +15,9 @@ type Tab = 'stats' | 'challenges' | 'account';
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-md bg-night/40 border-2 border-ink px-3 py-2 min-w-0">
-      <div className="text-xs text-muted font-bold truncate">{label}</div>
-      <div className="font-display font-extrabold text-xl tabular-nums truncate">{value}</div>
+    <div className="glass rounded-[16px] px-3.5 py-2.5 min-w-0">
+      <div className="eyebrow !text-[0.62rem] truncate">{label}</div>
+      <div className="font-display font-extrabold text-[1.4rem] leading-tight tabular-nums truncate mt-0.5">{value}</div>
     </div>
   );
 }
@@ -38,9 +38,9 @@ export function challengeText(c: ChallengeState): string {
 
 function Challenge({ c }: { c: ChallengeState }) {
   return (
-    <li className={`rounded-md border-2 border-ink p-2.5 ${c.claimed ? 'bg-mint/10' : 'bg-night/40'}`}>
+    <li className={`well rounded-[16px] p-3 ${c.claimed ? '!bg-mint/[0.08] !border-mint/25' : ''}`}>
       <div className="flex items-start gap-2">
-        <span className={`grid place-items-center w-6 h-6 rounded-full border-2 border-ink shrink-0 ${c.claimed ? 'bg-mint text-ink' : 'bg-panel-2 text-muted'}`}>
+        <span className={`grid place-items-center w-7 h-7 rounded-full shrink-0 ${c.claimed ? 'bg-gradient-to-b from-[#c4ffa6] to-[#5fd64a] text-ink shadow-[0_0_12px_-2px_rgb(140_240_106/0.7)]' : 'bg-white/[0.08] text-muted'}`}>
           {c.claimed ? <Icon name="check" className="w-3.5 h-3.5" strokeWidth={3} /> : <Icon name="target" className="w-3.5 h-3.5" />}
         </span>
         <span className="flex-1 text-sm font-bold leading-snug">{challengeText(c)}</span>
@@ -94,8 +94,10 @@ export function Profile() {
   return (
     <Page title={t('nav.profile')} testId="profile" actions={<SparksBadge n={profile.sparks} />}>
       <div className="flex flex-col gap-3">
-        <Panel className="p-3 flex flex-wrap items-center gap-3 md:gap-5">
-          <Avatar loadout={profile.loadout} size={84} animate={motionOk} />
+        <Panel className="p-3 md:p-4 flex flex-wrap items-center gap-3 md:gap-6">
+          <span className="relative grid place-items-center w-[92px] h-[92px] rounded-full shrink-0 bg-[radial-gradient(circle_at_50%_40%,rgb(255_200_90/0.35),rgb(30_26_50/0.9)_70%)] border border-white/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_10px_24px_-10px_rgb(0_0_0/0.8)] overflow-hidden">
+            <Avatar loadout={profile.loadout} size={88} animate={motionOk} />
+          </span>
           <div className="flex-1 min-w-[14rem]">
             <div className="flex gap-2 items-end">
               <TextInput
@@ -121,7 +123,7 @@ export function Profile() {
           </div>
           <div className="w-full sm:w-64">
             <div className="flex justify-between items-baseline">
-              <span className="font-display font-extrabold text-2xl">{t('common.level', { n: lvl.level })}</span>
+              <span className="font-display font-extrabold text-2xl text-title">{t('common.level', { n: lvl.level })}</span>
               <span className="text-xs text-muted tabular-nums">{lvl.need ? `${lvl.into} / ${lvl.need} XP` : t('profile.maxLevel')}</span>
             </div>
             <ProgressBar value={lvl.need ? lvl.into / lvl.need : 1} color="bg-sky" className="!h-4 mt-1" label={t('profile.xp')} />
@@ -162,9 +164,9 @@ export function Profile() {
               {played.length === 0 ? (
                 <p className="text-sm text-muted">{t('profile.noMatches')}</p>
               ) : (
-                <ul className="text-sm flex flex-col gap-1">
+                <ul className="text-sm flex flex-col">
                   {played.map((m) => (
-                    <li key={m.id} className="flex justify-between gap-2">
+                    <li key={m.id} className="flex justify-between gap-2 py-1.5 border-b border-white/[0.06] last:border-b-0">
                       <span>{t(`mode.${m.id}`)}</span>
                       <span className="tabular-nums text-muted">{t('profile.winsOf', { w: s.modeWins[m.id] ?? 0, n: s.modePlayed[m.id] ?? 0 })}</span>
                     </li>

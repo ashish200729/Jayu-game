@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { World } from '@game/sim';
+import { GAME_FONT } from '../art/draw';
 
 interface Particle {
   img: Phaser.GameObjects.Image;
@@ -121,9 +122,9 @@ export class Fx {
     let text = this.floaterPool.pop();
     if (!text) {
       text = this.scene.add
-        .text(0, 0, '', { fontFamily: 'Baloo 2, system-ui, sans-serif', fontSize: '16px', fontStyle: '800', color: '#fff', stroke: '#1b1d26', strokeThickness: 4 })
+        .text(0, 0, '', { fontFamily: GAME_FONT, fontSize: '15px', fontStyle: '800', color: '#fff', stroke: '#11131b', strokeThickness: 4 })
         .setOrigin(0.5)
-        .setResolution(2)
+        .setResolution(3)
         .setDepth(70);
     }
     text.setText(String(amount)).setPosition(x + (Math.random() - 0.5) * 16, y).setVisible(true).setAlpha(1);
@@ -132,12 +133,13 @@ export class Fx {
   }
 
   muzzle(x: number, y: number, angle: number, color: number, big: boolean): void {
-    this.spawn('flash', x, y, { rotation: angle, life: 0.05, scale: big ? 0.9 : 0.6, tint: color, add: true, fade: true, originX: 0.15 });
+    this.spawn('flash', x, y, { rotation: angle, life: 0.05, scale: (big ? 0.9 : 0.6) / 2, tint: color, add: true, fade: true, originX: 0.15 });
+    this.spawn('flash', x, y, { rotation: angle, life: 0.04, scale: (big ? 0.55 : 0.4) / 2, tint: 0xffffff, add: true, fade: true, originX: 0.15 });
     this.spawn('dot', x, y, { life: 0.08, scale: big ? 2.2 : 1.4, tint: 0xffe6a0, add: true, alpha: 0.6 });
   }
 
   shell(x: number, y: number, facing: number): void {
-    this.spawn('shell', x, y, { vx: -facing * (60 + Math.random() * 60), vy: -140 - Math.random() * 80, gravity: 900, life: 0.9, spin: 18 * -facing, bounce: true, depth: 45 });
+    this.spawn('shell', x, y, { vx: -facing * (60 + Math.random() * 60), vy: -140 - Math.random() * 80, gravity: 900, life: 0.9, spin: 18 * -facing, bounce: true, depth: 45, scale: 1 / 3 });
   }
 
   sparks(x: number, y: number, color = 0xffd27a, n = 6): void {
@@ -178,7 +180,7 @@ export class Fx {
     }
   }
 
-  ragdoll(parts: { key: string; x: number; y: number; origin: [number, number] }[], vx: number, vy: number): void {
+  ragdoll(parts: { key: string; x: number; y: number; origin: [number, number]; scale: number }[], vx: number, vy: number): void {
     for (const part of parts) {
       const a = Math.random() * Math.PI * 2;
       const s = 120 + Math.random() * 180;
@@ -187,7 +189,7 @@ export class Fx {
         vy: vy * 0.5 + Math.sin(a) * s - 220,
         gravity: 1200,
         life: 2.2,
-        scale: 0.5,
+        scale: part.scale,
         spin: (Math.random() - 0.5) * 16,
         bounce: true,
         depth: 41,

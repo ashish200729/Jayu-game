@@ -18,7 +18,7 @@ function WebOnly() {
     <Page title={t('lan.title')} testId="lan">
       <div className="grid place-items-center min-h-full py-4">
         <Panel className="max-w-xl p-5 md:p-6 text-center flex flex-col items-center gap-3">
-          <span className="grid place-items-center w-16 h-16 rounded-full bg-mint text-ink border-2 border-ink">
+          <span className="grid place-items-center w-16 h-16 rounded-full bg-gradient-to-b from-[#c4ffa6] to-[#4fc63a] text-[#0d2a06] shadow-[0_0_30px_-4px_rgb(140_240_106/0.6)]">
             <Icon name="wifi" className="w-9 h-9" />
           </span>
           <h2 className="font-display font-extrabold text-2xl">{t('lan.webTitle')}</h2>
@@ -45,7 +45,7 @@ function Intro({ onContinue }: { onContinue: () => void }) {
     <div className="grid place-items-center min-h-full py-2">
       <Panel className="max-w-2xl p-5 flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <span className="grid place-items-center w-12 h-12 rounded-full bg-mint text-ink border-2 border-ink shrink-0">
+          <span className="grid place-items-center w-12 h-12 rounded-full bg-gradient-to-b from-[#c4ffa6] to-[#4fc63a] text-[#0d2a06] shadow-[0_0_24px_-4px_rgb(140_240_106/0.6)] shrink-0">
             <Icon name="wifi" className="w-7 h-7" />
           </span>
           <h2 className="font-display font-extrabold text-2xl leading-tight">{t('lan.introTitle')}</h2>
@@ -93,8 +93,8 @@ function ServiceRow({ s, onJoin, busy }: { s: LanServiceInfo; onJoin: () => void
   const m = s.meta ?? {};
   const mismatch = Number(m.v) !== PROTOCOL_VERSION;
   return (
-    <li className="flex items-center gap-3 p-2.5 rounded-md border-2 border-ink bg-night/40">
-      <span className="grid place-items-center w-10 h-10 rounded-md bg-mint text-ink border-2 border-ink shrink-0">
+    <li className="well flex items-center gap-3 p-3 rounded-[16px]">
+      <span className="grid place-items-center w-11 h-11 rounded-[14px] bg-gradient-to-b from-[#c4ffa6] to-[#4fc63a] text-[#0d2a06] shadow-[0_6px_18px_-6px_rgb(140_240_106/0.6)] shrink-0">
         <Icon name="wifi" className="w-6 h-6" />
       </span>
       <span className="flex-1 min-w-0">

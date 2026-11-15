@@ -6,6 +6,7 @@ import { app, currentSession, go, joinPrivateRoom, loadPersisted, saveNow, measu
 import type { LobbySettings } from '@game/net';
 import { useStore } from './core/store';
 import { t } from './i18n';
+import { Backdrop } from './components/Backdrop';
 import { Button, Toasts } from './components/ui';
 import { useGamepadNav } from './components/gamepad';
 import { GameScreen } from './screens/GameScreen';
@@ -58,6 +59,10 @@ export async function boot(): Promise<void> {
   document.addEventListener('visibilitychange', () => document.hidden && void saveNow());
   window.addEventListener('pagehide', () => void saveNow());
   go('menu');
+  // Warm the audio engine off the critical path so the first tap/hover never stalls on AudioContext setup.
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+  if (idle) idle(() => audio.prepare(), { timeout: 2500 });
+  else setTimeout(() => audio.prepare(), 1200);
   // Invite links (?join=CODE) open the online screen with the code filled in, once a name is set.
   try {
     if (/^[A-Z2-9]{6}$/i.test(new URLSearchParams(location.search).get('join') ?? '') && app.get().profile.name) go('online');
@@ -184,37 +189,24 @@ export function App() {
   if (!webgl)
     return (
       <div className="absolute inset-0 grid place-items-center p-8 text-center" data-testid="no-webgl">
-        <p className="max-w-lg text-lg">{t('error.webgl')}</p>
+        <p className="glass rounded-[var(--radius-xl)] p-6 max-w-lg text-lg font-semibold">{t('error.webgl')}</p>
       </div>
     );
   return (
     <div className="absolute inset-0 overflow-hidden bg-night" data-testid="app">
-      {screen !== 'game' && <MenuBackdrop />}
-      <Suspense fallback={<div className="absolute inset-0 grid place-items-center text-muted">{t('common.loading')}</div>}>
+      {screen !== 'game' && <Backdrop dim={screen !== 'menu' && screen !== 'boot'} />}
+      <Suspense fallback={<div className="absolute inset-0 grid place-items-center"><div className="flex flex-col items-center gap-3 text-muted font-bold" role="status"><span aria-hidden="true" className="inline-block w-9 h-9 rounded-full border-[3px] border-white/15 border-t-sun animate-spin" />{t('common.loading')}</div></div>}>
         <AnimatePresence mode="wait">{ready && <ScreenSwitch screen={screen} />}</AnimatePresence>
       </Suspense>
       <Toasts />
       {updateReady && screen !== 'game' && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-panel border-2 border-ink rounded-md px-4 py-2 shadow-chunky" data-testid="update-toast">
+        <div className="absolute bottom-[max(var(--sab),12px)] left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 glass rounded-full pl-5 pr-2 py-2 font-bold" data-testid="update-toast">
           <span>{t('app.updateReady')}</span>
           <Button size="sm" variant="primary" onClick={() => applyUpdate?.()}>
             {t('app.restart')}
           </Button>
         </div>
       )}
-    </div>
-  );
-}
-
-/** Animated gradient + drifting silhouettes behind every menu (pure CSS, cheap). */
-function MenuBackdrop() {
-  return (
-    <div aria-hidden="true" className="absolute inset-0 overflow-hidden" style={{ background: 'linear-gradient(180deg, #2a1f4a 0%, #6b3a6e 45%, #ff8a5c 100%)' }}>
-      <div className="absolute inset-x-0 bottom-0 h-1/3" style={{ background: 'linear-gradient(180deg, transparent, rgba(16,18,26,0.85))' }} />
-      <svg className="absolute bottom-0 w-[200%] h-1/2 opacity-60 animate-[drift_60s_linear_infinite]" viewBox="0 0 2000 400" preserveAspectRatio="none">
-        <path d="M0 400 L0 240 L80 240 L80 160 L160 160 L160 220 L240 220 L240 120 L300 120 L300 200 L380 200 L380 250 L460 250 L460 140 L540 140 L540 230 L620 230 L620 180 L700 180 L700 260 L780 260 L780 110 L840 110 L840 210 L920 210 L920 240 L1000 240 L1000 160 L1080 160 L1080 220 L1160 220 L1160 120 L1220 120 L1220 200 L1300 200 L1300 250 L1380 250 L1380 140 L1460 140 L1460 230 L1540 230 L1540 180 L1620 180 L1620 260 L1700 260 L1700 110 L1760 110 L1760 210 L1840 210 L1840 240 L2000 240 L2000 400 Z" fill="#2a1f3a" />
-      </svg>
-      <style>{`@keyframes drift { from { transform: translateX(0) } to { transform: translateX(-50%) } }`}</style>
     </div>
   );
 }

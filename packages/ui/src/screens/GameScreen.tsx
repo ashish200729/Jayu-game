@@ -98,15 +98,16 @@ export function GameScreen() {
     <div className="absolute inset-0" data-testid="game-screen">
       <div ref={ref} className="absolute inset-0" style={{ touchAction: 'none' }} data-testid="game-canvas" />
       {error && (
-        <div className="absolute inset-0 grid place-items-center bg-night/90">
-          <div className="text-center">
-            <p className="mb-4 text-danger font-bold">{t('error.render')}</p>
+        <div className="absolute inset-0 grid place-items-center bg-night/90 safe">
+          <div className="glass rounded-[var(--radius-xl)] p-6 text-center max-w-md">
+            <p className="mb-4 text-coral font-bold">{t('error.render')}</p>
             <Button onClick={leaveSession}>{t('common.back')}</Button>
           </div>
         </div>
       )}
       {session?.reconnecting && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-md bg-coral text-ink font-bold border-2 border-ink shadow-chunky" data-testid="reconnecting">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full glass font-bold" role="status" data-testid="reconnecting">
+          <span aria-hidden="true" className="inline-block w-4 h-4 rounded-full border-2 border-white/20 border-t-coral animate-spin" />
           {t('game.reconnecting')}
         </div>
       )}
@@ -125,11 +126,11 @@ export function GameScreen() {
         </div>
       </Modal>
       {board && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-night/60 pointer-events-auto" onClick={() => setBoard(false)} data-testid="scoreboard">
-          <div className="bg-panel border-2 border-ink rounded-xl p-4 w-[min(94vw,720px)] max-h-[86vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-display font-extrabold text-2xl text-sun mb-2">{t('game.scoreboard')}</h2>
+        <div className="absolute inset-0 z-30 grid place-items-center bg-[#05060c]/65 pointer-events-auto safe" onClick={() => setBoard(false)} data-testid="scoreboard">
+          <div className="glass !bg-[linear-gradient(180deg,rgb(40_45_70/0.94),rgb(20_23_36/0.96))] rounded-[var(--radius-xl)] p-4 md:p-5 w-[min(94vw,760px)] max-h-[86vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display font-extrabold text-2xl text-title mb-2">{t('game.scoreboard')}</h2>
             <table className="w-full text-left text-sm">
-              <thead className="text-muted">
+              <thead className="eyebrow !text-[0.65rem]">
                 <tr>
                   <th className="py-1">{t('game.player')}</th>
                   <th>{t('stats.score')}</th>
@@ -146,9 +147,9 @@ export function GameScreen() {
                   const lobbyP = session?.lobby?.players.find((x) => x.id === p.id);
                   const me = p.id === session?.playerId;
                   return (
-                    <tr key={p.id} className={`border-t border-line ${me ? 'text-sun font-bold' : ''}`}>
+                    <tr key={p.id} className={`border-t border-white/[0.06] tabular-nums ${me ? 'text-sun font-bold bg-sun/[0.06]' : ''}`}>
                       <td className="py-1.5">
-                        {teams && <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 border border-ink" style={{ background: p.team === 0 ? 'var(--color-red-team)' : 'var(--color-blue-team)' }} />}
+                        {teams && <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 shadow-[0_0_6px_currentColor]" style={{ background: p.team === 0 ? 'var(--color-red-team)' : 'var(--color-blue-team)' }} />}
                         {name} {p.isBot && <span className="text-muted text-xs">({t('common.bot')})</span>}
                       </td>
                       <td>{p.score}</td>
@@ -190,7 +191,7 @@ export function GameScreen() {
         </div>
       )}
       <Modal open={wheel} onClose={() => setWheel(false)} title={t('game.emotes')} testId="emote-wheel">
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-3 gap-2.5 mb-3">
           {Array.from({ length: EMOTE_COUNT }, (_, i) => (
             <Button
               key={i}

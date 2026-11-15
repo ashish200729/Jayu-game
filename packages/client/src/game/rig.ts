@@ -2,13 +2,16 @@ import Phaser from 'phaser';
 import { COSMETICS, WEAPONS } from '@game/content';
 import type { PlayerView } from '@game/net';
 import { angleToRad } from '@game/sim';
-import { armTexture, gunArt, headTexture, jetpackTexture, legTexture, torsoTexture, type GunArt } from '../art/characters';
+import { CHAR_SCALE, armTexture, gunArt, headTexture, jetpackTexture, legTexture, torsoTexture, type GunArt } from '../art/characters';
+import { GAME_FONT } from '../art/draw';
 
-const HALF = 0.5;
+/** Display scale for 4x character textures. */
+const K = 1 / CHAR_SCALE;
 
 /**
  * A chunky cartoon soldier built from separate parts (head, torso, arms, legs, jetpack, gun) so
- * every cosmetic swaps cleanly. Procedurally animated (run cycle, aim, crouch, jet flight).
+ * every cosmetic swaps cleanly. Procedurally animated (breathing, run cycle, aim, crouch, flight lean,
+ * landing squash, layered jet flame).
  */
 export class CharacterRig {
   readonly root: Phaser.GameObjects.Container;
@@ -24,7 +27,10 @@ export class CharacterRig {
   private gun2: Phaser.GameObjects.Image;
   private armF: Phaser.GameObjects.Image;
   private flame: Phaser.GameObjects.Image;
+  private flameCore: Phaser.GameObjects.Image;
+  private flameGlow: Phaser.GameObjects.Image;
   private shield: Phaser.GameObjects.Image;
+  readonly shadow: Phaser.GameObjects.Image;
   readonly label: Phaser.GameObjects.Text;
   readonly marker: Phaser.GameObjects.Image;
   readonly hpBar: Phaser.GameObjects.Graphics;
@@ -32,6 +38,10 @@ export class CharacterRig {
   private gunWi = -2;
   private gunInfo: GunArt | null = null;
   private lookKey = '';
+  private wasGround = true;
+  private squash = 0;
+  private lean = 0;
+  private idleT = Math.random() * 10;
   look: number[] = [];
   team = -1;
   teamColor = 0xffffff;
@@ -46,28 +56,32 @@ export class CharacterRig {
     look: number[],
     team: number,
     teamColor: number,
+    labelResolution = 2,
   ) {
+    this.shadow = scene.add.image(0, 0, 'shadow').setVisible(false);
     this.root = scene.add.container(0, 0);
     this.body = scene.add.container(0, 0);
-    this.legB = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.1).setScale(HALF);
-    this.legF = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.1).setScale(HALF);
-    this.jet = scene.add.image(0, 0, '__WHITE').setOrigin(0.85, 0.3).setScale(HALF);
-    this.flame = scene.add.image(0, 0, 'dot').setOrigin(0.5, 0.1).setTint(0xffa53d).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.torso = scene.add.image(0, 0, '__WHITE').setScale(HALF);
-    this.armB = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.15).setScale(HALF);
-    this.head = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.82).setScale(HALF);
+    this.legB = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.1).setScale(K);
+    this.legF = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.1).setScale(K);
+    this.jet = scene.add.image(0, 0, '__WHITE').setOrigin(0.85, 0.3).setScale(K);
+    this.flameGlow = scene.add.image(0, 0, 'dot').setOrigin(0.5, 0.35).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.flame = scene.add.image(0, 0, 'jetflame').setOrigin(0.5, 0.06).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.flameCore = scene.add.image(0, 0, 'jetflame').setOrigin(0.5, 0.06).setBlendMode(Phaser.BlendModes.ADD).setTint(0xfff6d8).setVisible(false);
+    this.torso = scene.add.image(0, 0, '__WHITE').setScale(K);
+    this.armB = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.15).setScale(K);
+    this.head = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.82).setScale(K);
     this.gunPivot = scene.add.container(0, 0);
-    this.gun2 = scene.add.image(0, 0, '__WHITE').setScale(HALF).setVisible(false);
-    this.gun = scene.add.image(0, 0, '__WHITE').setScale(HALF);
-    this.armF = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.15).setScale(HALF);
+    this.gun2 = scene.add.image(0, 0, '__WHITE').setScale(K).setVisible(false);
+    this.gun = scene.add.image(0, 0, '__WHITE').setScale(K);
+    this.armF = scene.add.image(0, 0, '__WHITE').setOrigin(0.5, 0.15).setScale(K);
     this.gunPivot.add([this.gun2, this.gun]);
-    this.shield = scene.add.image(0, -22, 'ring').setScale(0.42).setAlpha(0.5).setTint(0x9ff3ff).setVisible(false);
-    this.body.add([this.flame, this.jet, this.legB, this.armB, this.torso, this.legF, this.head, this.gunPivot, this.armF, this.shield]);
+    this.shield = scene.add.image(0, -22, 'ring').setScale(0.42).setAlpha(0.5).setTint(0x9ff3ff).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.body.add([this.flameGlow, this.flame, this.flameCore, this.jet, this.legB, this.armB, this.torso, this.legF, this.head, this.gunPivot, this.armF, this.shield]);
     this.root.add(this.body);
     this.label = scene.add
-      .text(0, 0, '', { fontFamily: 'Baloo 2, system-ui, sans-serif', fontSize: '13px', fontStyle: '700', color: '#ffffff', stroke: '#1b1d26', strokeThickness: 4 })
+      .text(0, 0, '', { fontFamily: GAME_FONT, fontSize: '12px', fontStyle: '800', color: '#ffffff', stroke: '#11131b', strokeThickness: 3.5 })
       .setOrigin(0.5, 1)
-      .setResolution(2);
+      .setResolution(labelResolution);
     this.marker = scene.add.image(0, 0, 'crown').setScale(0.7).setVisible(false);
     this.hpBar = scene.add.graphics();
     this.setLook(look, team, teamColor);
@@ -84,13 +98,15 @@ export class CharacterRig {
     const [head, outfit, jet] = look.length ? look : [0, 7, 15];
     this.head.setTexture(headTexture(s, head));
     this.torso.setTexture(torsoTexture(s, outfit, team, teamColor));
-    this.legB.setTexture(legTexture(s, outfit)).setTint(0xcfcfcf);
+    this.legB.setTexture(legTexture(s, outfit)).setTint(0xc4c8d2);
     this.legF.setTexture(legTexture(s, outfit));
-    this.armB.setTexture(armTexture(s, outfit)).setTint(0xcfcfcf);
+    this.armB.setTexture(armTexture(s, outfit)).setTint(0xc4c8d2);
     this.armF.setTexture(armTexture(s, outfit));
     this.jet.setTexture(jetpackTexture(s, jet));
     const jc = COSMETICS[jet] ?? COSMETICS[15];
-    this.flame.setTint(jc.colors[1] ?? 0xffa53d);
+    const fc = jc.colors[1] ?? 0xffa53d;
+    this.flame.setTint(fc);
+    this.flameGlow.setTint(fc);
     this.gunWi = -2;
   }
 
@@ -106,45 +122,77 @@ export class CharacterRig {
     const g = gunArt(this.scene, wi, this.look[3] ?? 20);
     this.gunInfo = g;
     this.gun.setTexture(g.key).setVisible(true).setOrigin(g.gripX / g.w, g.gripY / g.h);
-    this.gun2.setTexture(g.key).setOrigin(g.gripX / g.w, g.gripY / g.h);
+    this.gun2.setTexture(g.key).setOrigin(g.gripX / g.w, g.gripY / g.h).setTint(0xc4c8d2);
+  }
+
+  /**
+   * Ground contact shadow. `gap` is the distance from the feet to the floor below (null = no floor in range).
+   */
+  setShadow(x: number, floorY: number | null, gap: number): void {
+    if (floorY === null) {
+      this.shadow.setVisible(false);
+      return;
+    }
+    const k = Math.max(0, 1 - gap / 180);
+    this.shadow.setVisible(this.root.visible && k > 0.02).setPosition(x, floorY + 1).setScale(0.45 + k * 0.35, 0.14 + k * 0.08).setAlpha(0.45 * k);
   }
 
   /** Update from a player view. `dt` in seconds. */
-  update(p: PlayerView, aim: number, dt: number, now: number): void {
+  update(p: PlayerView, aim: number, dt: number, now: number, reduceMotion = false): void {
     const crouchOff = p.crouch ? 10 : 0;
     this.root.setPosition(p.x, p.y);
     const a = angleToRad(aim);
     const facing = Math.cos(a) >= 0 ? 1 : -1;
     this.flipped = facing < 0;
-    this.body.setScale(facing, 1);
     const speed = Math.abs(p.vx);
+    // Landing squash.
+    if (p.onGround && !this.wasGround && p.vy >= 0) this.squash = reduceMotion ? 0 : 1;
+    this.wasGround = p.onGround;
+    this.squash = Math.max(0, this.squash - dt * 6);
+    const sq = Math.sin(this.squash * Math.PI) * 0.12;
+    this.body.setScale(facing * (1 + sq * 0.6), 1 - sq);
+    // Lean into horizontal motion while airborne (world-space rotation around the feet).
+    const targetLean = reduceMotion ? 0 : p.onGround ? Math.max(-0.06, Math.min(0.06, p.vx / 4000)) : Math.max(-0.2, Math.min(0.2, p.vx / 1600));
+    this.lean += (targetLean - this.lean) * Math.min(1, dt * 10);
+    this.body.setRotation(this.lean);
     // Run cycle / airborne pose.
     if (p.onGround && speed > 20 && !p.crouch) this.phase += dt * (speed / 22);
     else if (p.onGround) this.phase *= 0.8;
-    const swing = p.onGround ? Math.sin(this.phase) * Math.min(1, speed / 200) * 0.75 : p.jetting ? 0.35 : 0.2;
+    this.idleT += dt;
+    const swing = p.onGround ? Math.sin(this.phase) * Math.min(1, speed / 200) * 0.8 : p.jetting ? 0.32 + Math.sin(now * 0.02) * 0.04 : 0.22;
     const moveDir = Math.sign(p.vx) * facing || 1;
     const hipY = -17 + crouchOff * 0.6;
-    this.legB.setPosition(-3, hipY).setRotation(p.onGround ? -swing * moveDir : 0.3);
-    this.legF.setPosition(3, hipY).setRotation(p.onGround ? swing * moveDir : -0.15 + (p.jetting ? 0.1 : 0));
+    this.legB.setPosition(-3, hipY).setRotation(p.onGround ? -swing * moveDir : 0.34);
+    this.legF.setPosition(3, hipY).setRotation(p.onGround ? swing * moveDir : -0.18 + (p.jetting ? 0.12 : 0));
     if (p.crouch) {
       this.legB.setRotation(-0.9);
       this.legF.setRotation(0.9);
     }
-    const bob = p.onGround && speed > 20 ? Math.abs(Math.sin(this.phase)) * -1.5 : 0;
-    const torsoY = -28 + crouchOff + bob;
+    const breathe = p.onGround && speed < 20 && !reduceMotion ? Math.sin(this.idleT * 3.2) * 0.55 : 0;
+    const bob = p.onGround && speed > 20 ? Math.abs(Math.sin(this.phase)) * -1.6 : 0;
+    const torsoY = -28 + crouchOff + bob + breathe;
     this.torso.setPosition(0, torsoY);
     this.jet.setPosition(-7, torsoY - 4);
-    this.flame.setPosition(-12, torsoY + 8);
+    // Jet flame: additive outer plume + white-hot core + soft glow, flickering.
+    const fx = -11.6;
+    const fy = torsoY + 9;
     if (p.jetting) {
-      this.flame.setVisible(true).setScale(0.55 + Math.random() * 0.25, 0.9 + Math.random() * 0.6);
-    } else this.flame.setVisible(false);
+      const f = 0.85 + Math.random() * 0.3;
+      this.flame.setVisible(true).setPosition(fx, fy).setScale(0.3 * f, (0.42 + Math.random() * 0.14) * f).setAlpha(0.95);
+      this.flameCore.setVisible(true).setPosition(fx, fy).setScale(0.16 * f, 0.24 * f).setAlpha(0.9);
+      this.flameGlow.setVisible(true).setPosition(fx, fy + 6).setScale(1.5 + Math.random() * 0.3).setAlpha(0.45);
+    } else {
+      this.flame.setVisible(false);
+      this.flameCore.setVisible(false);
+      this.flameGlow.setVisible(false);
+    }
     // Aim: local angle in the mirrored body space.
     const local = facing > 0 ? a : Math.PI - a;
     const shoulderY = torsoY;
-    this.head.setPosition(1, torsoY - 8).setRotation(Math.max(-0.35, Math.min(0.35, normal(local) * 0.35)));
+    this.head.setPosition(1, torsoY - 8 - breathe * 0.4).setRotation(Math.max(-0.35, Math.min(0.35, normal(local) * 0.35)));
     this.recoil = Math.max(0, this.recoil - dt * 40);
     const kick = this.recoil;
-    this.gunPivot.setPosition(0, shoulderY).setRotation(local);
+    this.gunPivot.setPosition(0, shoulderY).setRotation(local - kick * 0.03);
     const reach = 9 - kick;
     this.gun.setPosition(reach, 0);
     const def = p.slots[p.active]?.wi >= 0 ? WEAPONS[p.slots[p.active].wi] : null;
@@ -160,8 +208,8 @@ export class CharacterRig {
     // Muzzle world position (for flashes and tracers).
     const gi = this.gunInfo;
     if (gi) {
-      const mx = reach + (gi.muzzleX - gi.gripX) * HALF;
-      const my = (gi.muzzleY - gi.gripY) * HALF;
+      const mx = reach + (gi.muzzleX - gi.gripX);
+      const my = gi.muzzleY - gi.gripY;
       const lx = Math.cos(local) * mx - Math.sin(local) * my;
       const ly = Math.sin(local) * mx + Math.cos(local) * my;
       this.muzzle.x = p.x + lx * facing;
@@ -181,10 +229,14 @@ export class CharacterRig {
     this.root.setVisible(v);
     this.label.setVisible(v);
     this.hpBar.setVisible(v);
-    if (!v) this.marker.setVisible(false);
+    if (!v) {
+      this.marker.setVisible(false);
+      this.shadow.setVisible(false);
+    }
   }
 
   setDepth(d: number): void {
+    this.shadow.setDepth(15);
     this.root.setDepth(d);
     this.label.setDepth(d + 1);
     this.marker.setDepth(d + 1);
@@ -192,13 +244,14 @@ export class CharacterRig {
   }
 
   /** Part textures for the cartoon ragdoll burst. */
-  parts(): { key: string; x: number; y: number; origin: [number, number] }[] {
+  parts(): { key: string; x: number; y: number; origin: [number, number]; scale: number }[] {
     const list = [this.head, this.torso, this.legB, this.legF, this.armF, this.jet];
-    return list.map((img) => ({ key: img.texture.key, x: this.root.x + img.x * (this.flipped ? -1 : 1), y: this.root.y + img.y, origin: [img.originX, img.originY] }));
+    return list.map((img) => ({ key: img.texture.key, x: this.root.x + img.x * (this.flipped ? -1 : 1), y: this.root.y + img.y, origin: [img.originX, img.originY], scale: K }));
   }
 
   destroy(): void {
     this.root.destroy();
+    this.shadow.destroy();
     this.label.destroy();
     this.marker.destroy();
     this.hpBar.destroy();

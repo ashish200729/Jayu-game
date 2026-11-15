@@ -6,6 +6,7 @@ import { app } from '../core/app';
 import { TEAM_COLORS } from '../core/settings';
 import { useStore } from '../core/store';
 import { t } from '../i18n';
+import { MapPreview } from './MapPreview';
 import { Panel, SectionTitle, Segmented, SelectCard, Stepper, Toggle } from './ui';
 
 export const hex = (n: number) => `#${(n & 0xffffff).toString(16).padStart(6, '0')}`;
@@ -55,7 +56,7 @@ function useMaps(): MapMeta[] {
   );
 }
 
-/** Theme swatch of a map: sky gradient, far skyline and a ground band. */
+/** Theme swatch of a map: sky gradient, far skyline and a ground band (kept for compact contexts). */
 export function MapSwatch({ theme, className = '' }: { theme: MapMeta['theme']; className?: string }) {
   return (
     <svg viewBox="0 0 160 72" preserveAspectRatio="none" className={className} aria-hidden="true">
@@ -66,10 +67,8 @@ export function MapSwatch({ theme, className = '' }: { theme: MapMeta['theme']; 
         </linearGradient>
       </defs>
       <rect width="160" height="72" fill={`url(#sky${theme.skyTop}${theme.skyBottom})`} />
-      <path d="M0 50 L14 50 L14 34 L30 34 L30 44 L46 44 L46 26 L58 26 L58 42 L76 42 L76 30 L92 30 L92 46 L110 46 L110 22 L122 22 L122 40 L140 40 L140 32 L160 32 L160 72 L0 72 Z" fill={hex(theme.far)} opacity="0.75" />
       <path d="M0 60 L40 60 L40 54 L70 54 L70 62 L104 62 L104 52 L130 52 L130 58 L160 58 L160 72 L0 72 Z" fill={hex(theme.solid)} />
       <path d="M0 60 L40 60 L40 54 L70 54 L70 62 L104 62 L104 52 L130 52 L130 58 L160 58" fill="none" stroke={hex(theme.rim)} strokeWidth="2" />
-      <circle cx="128" cy="14" r="5" fill={hex(theme.accent)} opacity="0.9" />
     </svg>
   );
 }
@@ -77,31 +76,43 @@ export function MapSwatch({ theme, className = '' }: { theme: MapMeta['theme']; 
 export function MapPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const maps = useMaps();
   return (
-    <div className="flex gap-3 overflow-x-auto snap-x pb-3 pt-1 px-1 -mx-1 [touch-action:pan-x_pan-y]" role="listbox" aria-label={t('setup.map')}>
-      {maps.map((m) => (
-        <SelectCard key={m.id} selected={value === m.id} onClick={() => onChange(m.id)} testId={`map-${m.id}`} className="snap-start shrink-0 w-44 md:w-52">
-          <MapSwatch theme={m.theme} className="block w-full h-16 md:h-20 border-b-2 border-ink" />
-          <div className="p-2">
-            <div className="font-display font-extrabold leading-tight truncate">{mapName(m.id)}</div>
-            <div className="text-xs text-muted leading-snug line-clamp-2 min-h-8">{t(`map.${m.id}.feature`)}</div>
-            <div className="text-xs font-bold text-sky mt-1">{t('setup.players', { min: m.recommended[0], max: m.recommended[1] })}</div>
-          </div>
-        </SelectCard>
-      ))}
+    <div className="flex gap-3 overflow-x-auto snap-x scroll-px-2 pb-3 pt-2 px-2 -mx-2 [touch-action:pan-x_pan-y]" role="listbox" aria-label={t('setup.map')}>
+      {maps.map((m) => {
+        const on = value === m.id;
+        return (
+          <SelectCard key={m.id} selected={on} onClick={() => onChange(m.id)} testId={`map-${m.id}`} className="snap-start shrink-0 w-48 md:w-56 group">
+            <span className="relative block overflow-hidden">
+              <MapPreview id={m.id} width={224} height={100} className={`w-full transition-transform duration-[var(--duration-slow)] ease-[var(--ease-snap)] ${on ? 'scale-[1.04]' : 'group-hover:scale-[1.04]'}`} />
+              <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[rgb(14_16_26/0.95)] via-transparent to-transparent" />
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${hex(m.theme.rim)}, transparent)` }} />
+              <span className="absolute left-2.5 bottom-1.5 right-2.5 font-display font-extrabold text-[1.05rem] leading-tight truncate drop-shadow-[0_2px_4px_rgb(0_0_0/0.8)]">{mapName(m.id)}</span>
+            </span>
+            <span className="block px-2.5 pt-1.5 pb-2.5">
+              <span className="block text-xs text-muted leading-snug line-clamp-2 min-h-8">{t(`map.${m.id}.feature`)}</span>
+              <span className="mt-1.5 inline-flex items-center gap-1 text-[0.7rem] font-extrabold text-sky tabular-nums">
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <path d="M9 7 A3 3 0 1 0 9.01 7 M3 20 C3 16 5.7 14 9 14 S15 16 15 20 M16 5.5 A3 3 0 0 1 16 11 M17.5 14.3 C19.6 15 21 16.8 21 20" />
+                </svg>
+                {t('setup.players', { min: m.recommended[0], max: m.recommended[1] })}
+              </span>
+            </span>
+          </SelectCard>
+        );
+      })}
     </div>
   );
 }
 
 export function ModePicker({ value, modes, onChange }: { value: ModeId; modes: ModeDef[]; onChange: (id: ModeId) => void }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 pt-1 pb-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 md:gap-3 pt-1 pb-2">
       {modes.map((m) => (
-        <SelectCard key={m.id} selected={value === m.id} onClick={() => onChange(m.id)} testId={`mode-${m.id}`} className="p-2.5">
-          <div className="flex items-center gap-2">
-            <span className={`text-[0.65rem] font-extrabold px-1.5 py-0.5 rounded border-2 border-ink ${m.teams ? 'bg-sky text-ink' : 'bg-coral text-ink'}`}>{m.short}</span>
+        <SelectCard key={m.id} selected={value === m.id} onClick={() => onChange(m.id)} testId={`mode-${m.id}`} className="p-3 pr-9 hover:-translate-y-0.5">
+          <span className="flex items-center gap-2">
+            <span className={`shrink-0 text-[0.62rem] tracking-wider font-extrabold px-1.5 py-0.5 rounded-md shadow-[inset_0_1px_0_rgb(255_255_255/0.45)] ${m.teams ? 'bg-gradient-to-b from-[#9be6ff] to-[#3fb8f0] text-[#032536]' : 'bg-gradient-to-b from-[#ffb28f] to-[#ff6f3a] text-[#3a1000]'}`}>{m.short}</span>
             <span className="font-display font-extrabold leading-tight line-clamp-2">{modeName(m.id)}</span>
-          </div>
-          <p className="text-xs text-muted mt-1 leading-snug line-clamp-2">{t(`mode.${m.id}.desc`)}</p>
+          </span>
+          <span className="block text-xs text-muted mt-1.5 leading-snug line-clamp-2">{t(`mode.${m.id}.desc`)}</span>
         </SelectCard>
       ))}
     </div>
@@ -136,7 +147,7 @@ export function MatchSettingsForm({ value, onChange, modes, minBots = 0, showMap
       )}
       <section>
         <SectionTitle>{t('setup.rules')}</SectionTitle>
-        <Panel className="grid lg:grid-cols-2 gap-x-4 py-2">
+        <Panel className="grid lg:grid-cols-2 gap-x-6 gap-y-0.5 p-2 md:p-3">
           <Stepper label={t('setup.bots')} value={value.botCount} min={minBots} max={11} onChange={(botCount) => onChange({ botCount })} testId="bots-count" />
           <Segmented
             label={t('setup.difficulty')}

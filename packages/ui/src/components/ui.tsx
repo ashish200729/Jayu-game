@@ -15,11 +15,11 @@ export function sfx(name: 'ui_click' | 'ui_hover' | 'ui_back' | 'ui_toggle'): vo
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'mint';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-sun text-ink shadow-chunky hover:brightness-105 active:translate-y-1 active:shadow-none',
-  secondary: 'bg-panel-2 text-text shadow-chunky hover:bg-line active:translate-y-1 active:shadow-none',
-  ghost: 'bg-transparent text-text hover:bg-white/10 active:bg-white/15',
-  danger: 'bg-danger text-white shadow-chunky hover:brightness-105 active:translate-y-1 active:shadow-none',
-  mint: 'bg-mint text-ink shadow-chunky hover:brightness-105 active:translate-y-1 active:shadow-none',
+  primary: 'btn btn-sun',
+  secondary: 'btn btn-glass',
+  ghost: 'btn btn-ghost',
+  danger: 'btn btn-danger',
+  mint: 'btn btn-mint',
 };
 
 export function Button({
@@ -45,7 +45,14 @@ export function Button({
   title?: string;
   autoFocus?: boolean;
 }) {
-  const sz = size === 'sm' ? 'min-h-10 px-3 text-sm rounded-md' : size === 'lg' ? 'min-h-14 px-6 text-xl rounded-lg' : size === 'xl' ? 'min-h-16 px-8 text-3xl rounded-xl' : 'min-h-12 px-4 text-base rounded-md';
+  const sz =
+    size === 'sm'
+      ? 'min-h-10 px-3.5 text-sm rounded-[12px] gap-1.5'
+      : size === 'lg'
+        ? 'min-h-14 px-6 text-xl rounded-[16px] gap-2.5'
+        : size === 'xl'
+          ? 'min-h-16 px-8 text-3xl rounded-[20px] gap-3'
+          : 'min-h-12 px-5 text-base rounded-[14px] gap-2';
   return (
     <button
       type="button"
@@ -59,7 +66,7 @@ export function Button({
         if (sound) sfx(sound);
         onClick?.();
       }}
-      className={`font-display font-extrabold tracking-wide select-none transition-all duration-[var(--duration-fast)] ease-[var(--ease-snap)] disabled:opacity-40 disabled:pointer-events-none border-2 border-ink inline-flex items-center justify-center gap-2 ${sz} ${VARIANTS[variant]} ${className}`}
+      className={`font-display font-extrabold tracking-wide select-none disabled:pointer-events-none inline-flex items-center justify-center whitespace-nowrap leading-none ${sz} ${VARIANTS[variant]} ${className}`}
     >
       {children}
     </button>
@@ -67,7 +74,7 @@ export function Button({
 }
 
 export function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`bg-panel/90 border-2 border-ink rounded-lg shadow-soft backdrop-blur-sm ${className}`}>{children}</div>;
+  return <div className={`glass rounded-[var(--radius-xl)] ${className}`}>{children}</div>;
 }
 
 export function Toggle({ value, onChange, label, testId }: { value: boolean; onChange: (v: boolean) => void; label: string; testId?: string }) {
@@ -81,20 +88,25 @@ export function Toggle({ value, onChange, label, testId }: { value: boolean; onC
         sfx('ui_toggle');
         onChange(!value);
       }}
-      className="flex items-center justify-between gap-4 w-full min-h-12 px-3 rounded-md hover:bg-white/5 text-left"
+      className="flex items-center justify-between gap-4 w-full min-h-12 px-3 rounded-[12px] hover:bg-white/[0.04] text-left transition-colors duration-[var(--duration-fast)]"
     >
-      <span className="text-text">{label}</span>
-      <span className={`relative w-14 h-8 rounded-full border-2 border-ink transition-colors duration-[var(--duration-base)] ${value ? 'bg-mint' : 'bg-line'}`}>
-        <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-white border-2 border-ink transition-all duration-[var(--duration-base)] ${value ? 'left-6' : 'left-0.5'}`} />
+      <span className="text-text font-semibold">{label}</span>
+      <span
+        className={`relative shrink-0 w-[52px] h-[30px] rounded-full transition-all duration-[var(--duration-base)] ease-[var(--ease-snap)] ${value ? 'bg-gradient-to-b from-[#b4ff92] to-[#5fd64a] shadow-[inset_0_1px_0_rgb(255_255_255/0.55),0_0_16px_-2px_rgb(140_240_106/0.6)]' : 'well-sunken'}`}
+      >
+        <span
+          className={`absolute top-[3px] w-6 h-6 rounded-full bg-gradient-to-b from-white to-[#dfe4ef] shadow-[0_2px_6px_rgb(0_0_0/0.45),inset_0_-1px_0_rgb(0_0_0/0.12)] transition-all duration-[var(--duration-base)] ease-[var(--ease-snap)] ${value ? 'left-[25px]' : 'left-[3px]'}`}
+        />
       </span>
     </button>
   );
 }
 
 export function Slider({ value, onChange, label, min = 0, max = 1, step = 0.05, format }: { value: number; onChange: (v: number) => void; label: string; min?: number; max?: number; step?: number; format?: (v: number) => string }) {
+  const pct = ((value - min) / (max - min || 1)) * 100;
   return (
-    <label className="flex items-center justify-between gap-4 w-full min-h-12 px-3 rounded-md hover:bg-white/5">
-      <span className="text-text shrink-0">{label}</span>
+    <label className="flex items-center justify-between gap-4 w-full min-h-12 px-3 rounded-[12px] hover:bg-white/[0.04]">
+      <span className="text-text font-semibold shrink-0">{label}</span>
       <span className="flex items-center gap-3 w-1/2">
         <input
           type="range"
@@ -103,10 +115,11 @@ export function Slider({ value, onChange, label, min = 0, max = 1, step = 0.05, 
           step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full accent-[var(--color-sun)] h-2"
+          className="w-full h-2 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-b [&::-webkit-slider-thumb]:from-white [&::-webkit-slider-thumb]:to-[#ffe08a] [&::-webkit-slider-thumb]:shadow-[0_2px_6px_rgb(0_0_0/0.5),0_0_0_3px_rgb(255_211_77/0.35)] [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-white"
+          style={{ background: `linear-gradient(90deg, #ffb92e 0%, #ffd34d ${pct}%, rgb(255 255 255 / 0.1) ${pct}%)` }}
           aria-label={label}
         />
-        <span className="w-12 text-right text-muted tabular-nums text-sm">{format ? format(value) : `${Math.round(value * 100)}%`}</span>
+        <span className="w-12 text-right text-muted tabular-nums text-sm font-bold">{format ? format(value) : `${Math.round(value * 100)}%`}</span>
       </span>
     </label>
   );
@@ -115,23 +128,26 @@ export function Slider({ value, onChange, label, min = 0, max = 1, step = 0.05, 
 export function Segmented<T extends string | number>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label?: string }) {
   return (
     <div className="flex items-center justify-between gap-4 w-full min-h-12 px-3">
-      {label && <span className="text-text shrink-0">{label}</span>}
-      <div className="flex rounded-md border-2 border-ink overflow-hidden" role="radiogroup" aria-label={label}>
-        {options.map((o) => (
-          <button
-            type="button"
-            key={String(o.value)}
-            role="radio"
-            aria-checked={o.value === value}
-            onClick={() => {
-              sfx('ui_toggle');
-              onChange(o.value);
-            }}
-            className={`px-3 min-h-10 text-sm font-bold transition-colors duration-[var(--duration-fast)] ${o.value === value ? 'bg-sun text-ink' : 'bg-panel-2 text-text hover:bg-line'}`}
-          >
-            {o.label}
-          </button>
-        ))}
+      {label && <span className="text-text font-semibold shrink-0">{label}</span>}
+      <div className="flex p-1 gap-1 rounded-[14px] well-sunken overflow-x-auto max-w-full" role="radiogroup" aria-label={label}>
+        {options.map((o) => {
+          const on = o.value === value;
+          return (
+            <button
+              type="button"
+              key={String(o.value)}
+              role="radio"
+              aria-checked={on}
+              onClick={() => {
+                sfx('ui_toggle');
+                onChange(o.value);
+              }}
+              className={`shrink-0 px-3 min-h-9 rounded-[10px] text-sm font-extrabold whitespace-nowrap transition-all duration-[var(--duration-fast)] ease-[var(--ease-snap)] ${on ? 'bg-gradient-to-b from-[#ffe58a] to-[#ffc236] text-[#2a1d00] shadow-[inset_0_1px_0_rgb(255_255_255/0.7),0_4px_12px_-4px_rgb(255_185_40/0.6)]' : 'text-muted hover:text-text hover:bg-white/[0.06]'}`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -168,23 +184,31 @@ export function Page({ title, children, back = 'menu', actions, testId, toolbar 
   return (
     <motion.div
       data-testid={testId}
-      initial={reduce ? false : { opacity: 0, x: 24 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={reduce ? undefined : { opacity: 0, x: -24 }}
-      transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+      initial={reduce ? false : { opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduce ? undefined : { opacity: 0, y: -8 }}
+      transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
       className="absolute inset-0 flex flex-col safe"
     >
-      <header className="flex items-center gap-3 mb-2 shrink-0 min-h-11">
+      <header className="flex items-center gap-3 mb-2.5 md:mb-4 shrink-0 min-h-11 w-full max-w-[1400px] mx-auto">
         {goBack && (
-          <Button variant="secondary" size="sm" sound="ui_back" testId="back" onClick={goBack} className="!min-h-11 !px-3 shrink-0">
-            <span aria-hidden="true">←</span> {t('common.back')}
+          <Button variant="secondary" size="sm" sound="ui_back" testId="back" onClick={goBack} className="!min-h-11 !px-3 shrink-0" title={t('common.back')}>
+            <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 5 L8 12 L15 19" />
+            </svg>
+            <span className="sr-only sm:not-sr-only">{t('common.back')}</span>
           </Button>
         )}
-        <h1 className="font-display font-extrabold text-2xl md:text-3xl text-sun drop-shadow-[0_3px_0_var(--color-ink)] truncate min-w-0">{title}</h1>
+        <div className="flex items-center gap-3 min-w-0">
+          <span aria-hidden="true" className="hidden sm:block w-1.5 h-8 rounded-full bg-gradient-to-b from-[#ffe58a] to-[#ff9d2e] shadow-[0_0_14px_rgb(255_190_60/0.6)]" />
+          <h1 className="font-display font-extrabold text-2xl md:text-[2rem] leading-none text-title truncate min-w-0 pt-1">{title}</h1>
+        </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">{actions}</div>
       </header>
-      {toolbar && <div className="shrink-0 mb-2">{toolbar}</div>}
-      <div className="flex-1 min-h-0 overflow-auto overscroll-contain -mx-1 px-1 pb-2 [touch-action:pan-y]">{children}</div>
+      {toolbar && <div className="shrink-0 mb-2 w-full max-w-[1400px] mx-auto">{toolbar}</div>}
+      <div className="flex-1 min-h-0 overflow-auto overscroll-contain -mx-2 px-2 pb-3 [touch-action:pan-y]">
+        <div className="w-full max-w-[1400px] mx-auto h-full">{children}</div>
+      </div>
     </motion.div>
   );
 }
@@ -201,25 +225,27 @@ export function Modal({ open, onClose, children, title, testId }: { open: boolea
       {open && (
         <motion.div
           data-testid={testId}
-          className="absolute inset-0 z-40 grid place-items-center bg-night/70 safe"
+          className="absolute inset-0 z-40 grid place-items-center bg-[#05060c]/80 safe"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.12 }}
+          transition={{ duration: 0.16 }}
           onClick={onClose}
         >
           <motion.div
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            initial={{ scale: 0.92, y: 12 }}
+            // No exit animation here: the scrim's fade carries the panel out. A nested exit that starts while
+            // the entrance is still running can leave AnimatePresence waiting forever (dialog never unmounts).
+            initial={{ scale: 0.94, y: 14 }}
             animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+            transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-panel border-2 border-ink rounded-xl shadow-soft p-5 max-w-[min(92vw,560px)] max-h-[88vh] overflow-auto w-full"
+            className="relative glass !bg-[linear-gradient(180deg,rgb(40_45_70/0.96),rgb(20_23_36/0.98))] rounded-[var(--radius-xl)] p-5 md:p-6 max-w-[min(92vw,580px)] max-h-[88vh] overflow-auto w-full"
           >
-            {title && <h2 className="font-display font-extrabold text-2xl text-sun mb-3">{title}</h2>}
+            <span aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-sun/60 to-transparent" />
+            {title && <h2 className="font-display font-extrabold text-2xl md:text-3xl leading-tight text-title mb-3">{title}</h2>}
             {children}
           </motion.div>
         </motion.div>
@@ -231,16 +257,20 @@ export function Modal({ open, onClose, children, title, testId }: { open: boolea
 export function Toasts() {
   const toasts = useStore(app, (s) => s.toasts);
   return (
-    <div className="pointer-events-none absolute z-50 top-3 left-1/2 -translate-x-1/2 flex flex-col gap-2 items-center" aria-live="polite">
+    <div className="pointer-events-none absolute z-50 top-[max(var(--sat),12px)] left-1/2 -translate-x-1/2 flex flex-col gap-2 items-center" aria-live="polite">
       <AnimatePresence>
         {toasts.map((x) => (
           <motion.div
             key={x.id}
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            className={`px-4 py-2 rounded-md border-2 border-ink shadow-chunky font-bold ${x.kind === 'error' ? 'bg-danger text-white' : x.kind === 'success' ? 'bg-mint text-ink' : 'bg-panel-2 text-text'}`}
+            initial={{ opacity: 0, y: -14, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+            className="glass flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full font-bold text-sm"
           >
+            <span className={`grid place-items-center w-6 h-6 rounded-full text-[0.8rem] font-extrabold ${x.kind === 'error' ? 'bg-danger text-white' : x.kind === 'success' ? 'bg-mint text-ink' : 'bg-sky text-ink'}`} aria-hidden="true">
+              {x.kind === 'error' ? '!' : x.kind === 'success' ? '✓' : 'i'}
+            </span>
             {t(x.text)}
           </motion.div>
         ))}
@@ -249,14 +279,14 @@ export function Toasts() {
   );
 }
 
-export function Chip({ children, color = 'bg-panel-2' }: { children: ReactNode; color?: string }) {
-  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border-2 border-ink text-xs font-bold ${color}`}>{children}</span>;
+export function Chip({ children, color = 'bg-white/10 text-text' }: { children: ReactNode; color?: string }) {
+  return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.7rem] font-extrabold leading-tight shadow-[inset_0_1px_0_rgb(255_255_255/0.25)] ${color}`}>{children}</span>;
 }
 
 /** Horizontal tab strip (scrolls on narrow screens). */
 export function Tabs<T extends string>({ value, options, onChange, testIdPrefix, className = '' }: { value: T; options: { value: T; label: string; badge?: ReactNode }[]; onChange: (v: T) => void; testIdPrefix?: string; className?: string }) {
   return (
-    <div role="tablist" className={`flex gap-1.5 overflow-x-auto pb-1 -mb-1 [touch-action:pan-x] ${className}`}>
+    <div role="tablist" className={`flex gap-1 p-1 rounded-[16px] well-sunken overflow-x-auto [touch-action:pan-x] self-start w-fit max-w-full ${className}`}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -270,7 +300,7 @@ export function Tabs<T extends string>({ value, options, onChange, testIdPrefix,
               if (!on) sfx('ui_toggle');
               onChange(o.value);
             }}
-            className={`shrink-0 min-h-11 px-4 rounded-md border-2 border-ink font-display font-bold text-base whitespace-nowrap transition-all duration-[var(--duration-fast)] inline-flex items-center gap-2 ${on ? 'bg-sun text-ink shadow-chunky' : 'bg-panel-2 text-text hover:bg-line'}`}
+            className={`shrink-0 min-h-11 px-4 rounded-[12px] font-display font-bold text-base whitespace-nowrap transition-all duration-[var(--duration-fast)] ease-[var(--ease-snap)] inline-flex items-center gap-2 ${on ? 'bg-gradient-to-b from-[#ffe58a] to-[#ffc236] text-[#2a1d00] shadow-[inset_0_1px_0_rgb(255_255_255/0.7),0_6px_16px_-6px_rgb(255_185_40/0.65)]' : 'text-muted hover:text-text hover:bg-white/[0.06]'}`}
           >
             {o.label}
             {o.badge}
@@ -281,7 +311,7 @@ export function Tabs<T extends string>({ value, options, onChange, testIdPrefix,
   );
 }
 
-/** Single-line text input with the chunky look. */
+/** Single-line text input. */
 export function TextInput({
   value,
   onChange,
@@ -312,8 +342,8 @@ export function TextInput({
   mono?: boolean;
 }) {
   return (
-    <label className={`flex flex-col gap-1 min-w-0 ${className}`}>
-      {label && <span className="text-sm font-bold text-muted">{label}</span>}
+    <label className={`flex flex-col gap-1.5 min-w-0 ${className}`}>
+      {label && <span className="eyebrow">{label}</span>}
       <input
         type="text"
         value={value}
@@ -334,7 +364,7 @@ export function TextInput({
             onEnter();
           }
         }}
-        className={`min-h-12 w-full px-3 rounded-md border-2 bg-night text-text text-lg font-bold placeholder:text-muted/60 placeholder:font-normal select-text [user-select:text] focus:outline-none focus:border-sky ${invalid ? 'border-danger' : 'border-ink'} ${mono ? 'font-mono tracking-[0.3em]' : ''}`}
+        className={`min-h-12 w-full px-4 rounded-[14px] well-sunken text-text text-lg font-bold placeholder:text-muted/50 placeholder:font-semibold select-text [user-select:text] outline-none transition-[box-shadow,border-color] duration-[var(--duration-fast)] focus:!border-sky/70 focus:shadow-[inset_0_2px_6px_rgb(0_0_0/0.45),0_0_0_3px_rgb(90_209_255/0.2)] ${invalid ? '!border-danger/80 shadow-[0_0_0_3px_rgb(255_90_79/0.18)]' : ''} ${mono ? 'font-mono tracking-[0.3em]' : ''}`}
       />
     </label>
   );
@@ -344,8 +374,10 @@ export function TextInput({
 export function ProgressBar({ value, color = 'bg-sun', className = '', label }: { value: number; color?: string; className?: string; label?: string }) {
   const v = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
   return (
-    <div className={`h-3 rounded-full bg-night border-2 border-ink overflow-hidden ${className}`} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)}>
-      <div className={`h-full ${color} rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-snap)]`} style={{ width: `${v * 100}%` }} />
+    <div className={`h-3 rounded-full well-sunken !border-0 overflow-hidden ${className}`} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)}>
+      <div className={`relative h-full ${color} rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-snap)] shadow-[0_0_12px_-2px_currentColor]`} style={{ width: `${v * 100}%` }}>
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1/2 rounded-full bg-white/35" />
+      </div>
     </div>
   );
 }
@@ -359,17 +391,18 @@ export function Stepper({ value, onChange, label, min, max, step = 1, format, te
       onChange(n);
     }
   };
+  const btn = 'btn btn-glass w-11 h-11 rounded-[12px] font-display font-extrabold text-xl leading-none disabled:opacity-35 disabled:pointer-events-none';
   return (
     <div className="flex items-center justify-between gap-4 w-full min-h-12 px-3" data-testid={testId}>
-      <span className="text-text">{label}</span>
-      <div className="flex items-center gap-1" role="group" aria-label={label}>
-        <button type="button" aria-label="−" disabled={value <= min} onClick={() => set(value - step)} className="w-11 h-11 rounded-md border-2 border-ink bg-panel-2 hover:bg-line font-display font-extrabold text-xl disabled:opacity-40">
+      <span className="text-text font-semibold">{label}</span>
+      <div className="flex items-center gap-1.5" role="group" aria-label={label}>
+        <button type="button" aria-label="−" disabled={value <= min} onClick={() => set(value - step)} className={btn}>
           −
         </button>
-        <span className="min-w-14 text-center font-display font-extrabold text-xl tabular-nums" aria-live="polite">
+        <span className="min-w-14 px-1 text-center font-display font-extrabold text-xl tabular-nums" aria-live="polite">
           {format ? format(value) : value}
         </span>
-        <button type="button" aria-label="+" disabled={value >= max} onClick={() => set(value + step)} className="w-11 h-11 rounded-md border-2 border-ink bg-panel-2 hover:bg-line font-display font-extrabold text-xl disabled:opacity-40">
+        <button type="button" aria-label="+" disabled={value >= max} onClick={() => set(value + step)} className={btn}>
           +
         </button>
       </div>
@@ -378,12 +411,16 @@ export function Stepper({ value, onChange, label, min, max, step = 1, format, te
 }
 
 export function Spinner({ className = '' }: { className?: string }) {
-  return <span aria-hidden="true" className={`inline-block w-8 h-8 rounded-full border-4 border-line border-t-sun animate-spin ${className}`} />;
+  return <span aria-hidden="true" className={`inline-block w-8 h-8 rounded-full border-[3px] border-white/15 border-t-sun border-r-sun/60 animate-spin ${className}`} />;
 }
 
-/** Small uppercase heading inside panels. */
+/** Small heading inside panels / above sections. */
 export function SectionTitle({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <h2 className={`font-display font-extrabold text-lg text-sun px-1 mb-1 ${className}`}>{children}</h2>;
+  return (
+    <h2 className={`flex items-center gap-2 font-display font-extrabold text-[0.95rem] uppercase tracking-[0.12em] [:root[lang=hi]_&]:tracking-normal [:root[lang=hi]_&]:normal-case text-sun/95 px-1 mb-2 ${className}`}>
+      {children}
+    </h2>
+  );
 }
 
 /** Selectable card (map, mode, item). */
@@ -400,9 +437,16 @@ export function SelectCard({ selected, onClick, children, className = '', testId
         sfx('ui_toggle');
         onClick();
       }}
-      className={`relative text-left rounded-lg border-2 border-ink overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-snap)] disabled:opacity-50 ${selected ? 'bg-panel-2 ring-4 ring-sun shadow-chunky -translate-y-0.5' : 'bg-panel hover:bg-panel-2 shadow-chunky hover:-translate-y-0.5'} ${className}`}
+      className={`tile relative text-left rounded-[18px] overflow-hidden disabled:opacity-50 hover:-translate-y-0.5 ${selected ? 'selected-ring -translate-y-0.5' : ''} ${className}`}
     >
       {children}
+      {selected && (
+        <span aria-hidden="true" className="absolute top-2 right-2 grid place-items-center w-6 h-6 rounded-full bg-gradient-to-b from-[#ffe58a] to-[#ffc236] text-[#2a1d00] shadow-[0_2px_8px_rgb(0_0_0/0.5)]">
+          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12.5 L10 17.5 L19 7" />
+          </svg>
+        </span>
+      )}
     </button>
   );
 }
@@ -410,8 +454,10 @@ export function SelectCard({ selected, onClick, children, className = '', testId
 /** Sparks currency badge. */
 export function SparksBadge({ n, className = '' }: { n: number; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 min-h-8 rounded-full border-2 border-ink bg-panel-2 font-display font-extrabold text-sun tabular-nums ${className}`} title={t('common.sparks', { n })}>
-      <SparkIcon />
+    <span className={`glass inline-flex items-center gap-1.5 pl-2 pr-3 min-h-9 rounded-full font-display font-extrabold text-sun tabular-nums ${className}`} title={t('common.sparks', { n })}>
+      <span className="grid place-items-center w-6 h-6 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff1b0,#ffb92e_70%)] shadow-[0_0_12px_-2px_rgb(255_190_60/0.8)]">
+        <SparkIcon className="w-3.5 h-3.5" />
+      </span>
       {n.toLocaleString()}
     </span>
   );
@@ -420,7 +466,7 @@ export function SparksBadge({ n, className = '' }: { n: number; className?: stri
 export function SparkIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
-      <path d="M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z" fill="var(--color-sun)" stroke="var(--color-ink)" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z" fill="var(--color-sun)" stroke="#6b4300" strokeWidth="1" strokeLinejoin="round" />
     </svg>
   );
 }

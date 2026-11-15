@@ -46,6 +46,7 @@ export const en = {
   'error.kicked': 'You were removed from the room.',
   'error.notFound': 'No room with that code. Check the code and try again.',
   'error.server': 'Could not reach the game server. Check your connection.',
+  'error.offlineFallback': 'Game server unreachable — starting an offline match with bots.',
   'error.lanWeb': 'Local Wi-Fi play needs the Android or iOS app — browsers cannot host or join nearby matches.',
   'app.updateReady': 'A new version of Jayu is ready.',
   'app.restart': 'Restart',

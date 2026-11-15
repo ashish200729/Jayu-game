@@ -37,28 +37,28 @@ function ItemCard({ item, profile, previewing, onPick, onBuy }: { item: Cosmetic
   const unlocked = isUnlocked(profile, item.id);
   const equipped = profile.loadout[item.category] === item.id;
   return (
-    <div className={`relative flex flex-col rounded-lg border-2 border-ink overflow-hidden bg-panel shadow-chunky ${equipped ? 'ring-4 ring-mint' : previewing ? 'ring-4 ring-sun' : ''}`}>
+    <div className={`tile group relative flex flex-col rounded-[18px] overflow-hidden hover:-translate-y-0.5 ${equipped ? '!border-mint/80 shadow-[0_0_0_1px_rgb(140_240_106/0.8),0_0_0_4px_rgb(140_240_106/0.16),0_14px_30px_-14px_rgb(120_230_90/0.5)]' : previewing ? 'selected-ring' : ''}`}>
       <button
         type="button"
         data-testid={`item-${item.id}`}
         aria-pressed={equipped}
         onPointerEnter={() => sfx('ui_hover')}
         onClick={onPick}
-        className="flex flex-col text-left hover:bg-panel-2 min-h-12"
+        className="flex flex-col text-left min-h-12"
       >
-        <span className="relative h-24 border-b-2 border-ink overflow-hidden" style={{ background: `linear-gradient(160deg, ${hex(item.colors[0] ?? 0x2a2f45)}55, transparent 70%)` }}>
+        <span className="relative h-24 md:h-28 overflow-hidden border-b border-white/[0.06]" style={{ background: `radial-gradient(90% 80% at 50% 70%, ${hex(item.colors[0] ?? 0x2a2f45)}55, transparent 70%), linear-gradient(180deg, rgb(255 255 255 / 0.03), rgb(0 0 0 / 0.2))` }}>
           <Thumb item={item} loadout={profile.loadout} />
           {!unlocked && (
-            <span className="absolute top-1 right-1 grid place-items-center w-6 h-6 rounded-full bg-night border-2 border-ink text-muted">
+            <span className="absolute top-1.5 right-1.5 grid place-items-center w-6 h-6 rounded-full bg-black/55 backdrop-blur-sm border border-white/10 text-white/70">
               <Icon name="lock" className="w-3.5 h-3.5" />
             </span>
           )}
-          {equipped && <span className="absolute top-1 left-1 px-1.5 rounded-full bg-mint text-ink text-[0.65rem] font-extrabold border-2 border-ink">{t('armoury.equipped')}</span>}
+          {equipped && <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full bg-gradient-to-b from-[#c4ffa6] to-[#5fd64a] text-[#0d2a06] text-[0.62rem] font-extrabold shadow-[0_2px_8px_rgb(0_0_0/0.4)]">{t('armoury.equipped')}</span>}
         </span>
-        <span className="px-2 pt-1 pb-1.5 font-bold text-sm leading-tight truncate">{t(`cos.${item.id}`)}</span>
+        <span className="px-2.5 pt-1.5 pb-2 font-display font-bold text-[0.95rem] leading-tight truncate">{t(`cos.${item.id}`)}</span>
       </button>
       {!unlocked && (
-        <div className="flex items-center gap-1 px-2 pb-2 -mt-0.5">
+        <div className="flex items-center gap-1 px-2.5 pb-2.5 -mt-0.5">
           <span className="text-xs text-muted font-bold whitespace-nowrap">{t('common.level', { n: item.unlockLevel })}</span>
           {item.price > 0 && (
             <Button size="sm" variant={profile.sparks >= item.price ? 'primary' : 'secondary'} className="ml-auto !min-h-9 !px-2 !text-xs" onClick={onBuy} testId={`buy-${item.id}`}>
@@ -116,10 +116,14 @@ export function Armoury() {
   return (
     <Page title={t('nav.armoury')} testId="armoury" actions={<SparksBadge n={profile.sparks} />}>
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 md:gap-5 h-full min-h-0">
-        <Panel className="flex flex-col items-center justify-center p-2 md:p-4 self-start max-h-full">
-          <Avatar loadout={shown} size={size} pose={pose} animate={motionOk} weapon={cat === 'skin' ? 'comet' : 'kestrel'} />
-          <div className="text-center mt-1 max-w-[14rem]">
-            <div className="font-display font-extrabold text-lg leading-tight truncate">{previewName}</div>
+        <Panel className="relative flex flex-col items-center justify-center p-2 md:p-4 self-start max-h-full overflow-hidden">
+          <span aria-hidden="true" className="absolute inset-x-0 top-[8%] h-[80%] bg-[radial-gradient(50%_50%_at_50%_55%,rgb(255_200_90/0.28),transparent_70%)]" />
+          <span aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 bottom-[17%] w-[62%] h-[7%] rounded-[50%] border-2 border-sun/60 bg-[radial-gradient(closest-side,rgb(255_200_90/0.25),transparent)] shadow-[0_0_20px_rgb(255_200_80/0.5)]" />
+          <span className="relative">
+            <Avatar loadout={shown} size={size} pose={pose} animate={motionOk} weapon={cat === 'skin' ? 'comet' : 'kestrel'} />
+          </span>
+          <div className="relative text-center mt-1 max-w-[14rem]">
+            <div className="font-display font-extrabold text-xl leading-tight truncate">{previewName}</div>
             <div className="text-xs text-muted">{previewLocked ? t('armoury.previewLocked') : t('armoury.levelNow', { n: level })}</div>
           </div>
         </Panel>

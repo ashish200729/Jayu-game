@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { COSMETICS, weaponIndex, type Loadout } from '@game/content';
-import { armTexture, gunArt, headTexture, jetpackTexture, legTexture, torsoTexture } from '@game/client/art';
+import { CHAR_SCALE, armTexture, gunArt, headTexture, jetpackTexture, legTexture, torsoTexture } from '@game/client/art';
 
 /** Texture sink that mimics the bits of Phaser's texture manager the art code uses. */
 const cache = new Map<string, HTMLCanvasElement>();
@@ -49,33 +49,55 @@ export function Avatar({ loadout, size = 220, pose = 'idle', team = -1, teamColo
       const bob = animate ? Math.sin(t * 2.2) * 1.2 : 0;
       const spin = pose === 'spin' && animate ? Math.sin(t * 3) : 1;
       g.scale(spin === 0 ? 0.01 : spin, 1);
-      // shadow
-      g.fillStyle = 'rgba(0,0,0,0.3)';
+      // soft contact shadow
+      const sh = g.createRadialGradient(0, 1, 0, 0, 1, 18);
+      sh.addColorStop(0, 'rgba(0,0,0,0.45)');
+      sh.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = sh;
+      g.save();
+      g.scale(1, 0.22);
       g.beginPath();
-      g.ellipse(0, 1, 16, 3.5, 0, 0, Math.PI * 2);
+      g.arc(0, 4.5, 18, 0, Math.PI * 2);
       g.fill();
+      g.restore();
       const img = (cv: HTMLCanvasElement, x: number, y: number, ox: number, oy: number, rot = 0) => {
         g.save();
         g.translate(x, y);
         g.rotate(rot);
-        g.drawImage(cv, -ox * (cv.width / 2), -oy * (cv.height / 2), cv.width / 2, cv.height / 2);
+        g.drawImage(cv, -ox * (cv.width / CHAR_SCALE), -oy * (cv.height / CHAR_SCALE), cv.width / CHAR_SCALE, cv.height / CHAR_SCALE);
         g.restore();
       };
       const torsoY = -28 + bob;
       // flame
       if (animate && pose !== 'salute') {
-        const fl = 6 + Math.random() * 5;
-        const grd = g.createRadialGradient(-12, torsoY + 10, 0, -12, torsoY + 10 + fl, fl + 4);
+        const fl = 9 + Math.random() * 5;
         const r = (flameCol >> 16) & 255;
         const gg = (flameCol >> 8) & 255;
         const b = flameCol & 255;
-        grd.addColorStop(0, `rgba(255,255,255,0.9)`);
-        grd.addColorStop(0.4, `rgba(${r},${gg},${b},0.8)`);
-        grd.addColorStop(1, `rgba(${r},${gg},${b},0)`);
-        g.fillStyle = grd;
-        g.beginPath();
-        g.ellipse(-12, torsoY + 12 + fl / 2, 4, fl, 0, 0, Math.PI * 2);
-        g.fill();
+        const fx = -11.6;
+        const fy = torsoY + 9;
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        const glow = g.createRadialGradient(fx, fy + 6, 0, fx, fy + 6, 14);
+        glow.addColorStop(0, `rgba(${r},${gg},${b},0.45)`);
+        glow.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+        g.fillStyle = glow;
+        g.fillRect(fx - 14, fy - 8, 28, 28);
+        const plume = (w: number, len: number, col: string) => {
+          const grd = g.createLinearGradient(0, fy, 0, fy + len);
+          grd.addColorStop(0, col.replace('A', '1'));
+          grd.addColorStop(0.6, col.replace('A', '0.5'));
+          grd.addColorStop(1, col.replace('A', '0'));
+          g.fillStyle = grd;
+          g.beginPath();
+          g.moveTo(fx, fy);
+          g.bezierCurveTo(fx + w, fy + len * 0.08, fx + w * 0.45, fy + len * 0.5, fx, fy + len);
+          g.bezierCurveTo(fx - w * 0.45, fy + len * 0.5, fx - w, fy + len * 0.08, fx, fy);
+          g.fill();
+        };
+        plume(4.6, fl * 1.5, `rgba(${r},${gg},${b},A)`);
+        plume(2.4, fl * 0.8, 'rgba(255,250,225,A)');
+        g.restore();
       }
       img(jet, -7, torsoY - 4, 0.85, 0.3);
       img(leg, -3, -17 + bob * 0.3, 0.5, 0.1, -0.05);
@@ -88,7 +110,7 @@ export function Avatar({ loadout, size = 220, pose = 'idle', team = -1, teamColo
         g.save();
         g.translate(0, torsoY);
         g.rotate(-0.12);
-        g.drawImage(gunC, 9 - gun.gripX / 2, -gun.gripY / 2, gun.w / 2, gun.h / 2);
+        g.drawImage(gunC, 9 - gun.gripX, -gun.gripY, gun.w, gun.h);
         g.restore();
       }
       img(arm, 2, torsoY - 2, 0.5, 0.15, armRot);

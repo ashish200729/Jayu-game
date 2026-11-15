@@ -1,4 +1,4 @@
-export const SETTINGS_VERSION = 1;
+export const SETTINGS_VERSION = 2;
 
 export type Action =
   | 'left'
@@ -51,7 +51,30 @@ export interface TouchControlLayout {
 
 export type TouchLayout = Record<TouchControl, TouchControlLayout>;
 
+/**
+ * Thumb-zone layout: movement under the left thumb, aim under the right with the action buttons in an arc
+ * above/left of it, nothing under the HUD cards (top-left vitals, top-centre score, top-right minimap).
+ * Spacing keeps every pair of controls at least one thumb-width apart on a 915x412 phone.
+ */
 export function defaultTouchLayout(): TouchLayout {
+  const c = (x: number, y: number, size = 1, visible = true): TouchControlLayout => ({ x, y, size, opacity: 0.55, visible });
+  return {
+    move: c(0.13, 0.72, 1),
+    aim: c(0.87, 0.7, 1),
+    fire: c(0.62, 0.8, 0.9, false),
+    jet: c(0.3, 0.66, 0.9, false),
+    grenade: c(0.8, 0.43, 0.85),
+    swap: c(0.735, 0.62, 0.85),
+    reload: c(0.715, 0.85, 0.8),
+    melee: c(0.935, 0.43, 0.8),
+    zoom: c(0.665, 0.41, 0.75),
+    crouch: c(0.29, 0.86, 0.8),
+    emote: c(0.045, 0.42, 0.7),
+  };
+}
+
+/** The v1 defaults, which overlapped the HUD on phones. Saved layouts still equal to these are upgraded. */
+function legacyTouchLayout(): TouchLayout {
   const c = (x: number, y: number, size = 1, visible = true): TouchControlLayout => ({ x, y, size, opacity: 0.55, visible });
   return {
     move: c(0.14, 0.72, 1),
@@ -66,6 +89,14 @@ export function defaultTouchLayout(): TouchLayout {
     crouch: c(0.05, 0.42, 0.8),
     emote: c(0.05, 0.28, 0.75),
   };
+}
+
+function sameLayout(a: Partial<TouchLayout>, b: TouchLayout): boolean {
+  return (Object.keys(b) as TouchControl[]).every((k) => {
+    const x = a[k];
+    const y = b[k];
+    return !!x && x.x === y.x && x.y === y.y && x.size === y.size && x.visible === y.visible;
+  });
 }
 
 export interface Settings {
@@ -125,7 +156,12 @@ export function migrateSettings(raw: unknown, touch = false): Settings {
   const d = defaultSettings(touch);
   if (!raw || typeof raw !== 'object') return d;
   const r = raw as Partial<Settings>;
-  const layouts = Array.isArray(r.controls?.layouts) && r.controls!.layouts.length === 3 ? r.controls!.layouts.map((l) => ({ ...defaultTouchLayout(), ...l })) : d.controls.layouts;
+  const legacy = legacyTouchLayout();
+  const upgrade = (r.version ?? 1) < 2;
+  const layouts =
+    Array.isArray(r.controls?.layouts) && r.controls!.layouts.length === 3
+      ? r.controls!.layouts.map((l) => (upgrade && sameLayout(l, legacy) ? defaultTouchLayout() : { ...defaultTouchLayout(), ...l }))
+      : d.controls.layouts;
   return {
     ...d,
     ...r,

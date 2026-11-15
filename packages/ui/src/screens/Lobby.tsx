@@ -24,8 +24,8 @@ function PlayerRow({ p, me, hostId, canKick, teams }: { p: LobbyPlayer; me: bool
   const [red, blue] = useTeamColors();
   const teamCol = teams && p.team >= 0 ? (p.team === 0 ? red : blue) : 'transparent';
   return (
-    <li className={`flex items-center gap-2.5 pr-2 rounded-md border-2 border-ink overflow-hidden ${me ? 'bg-panel-2' : 'bg-night/40'} ${p.connected ? '' : 'opacity-50'}`} data-testid={`slot-${p.id}`}>
-      <span className="self-stretch w-1.5 shrink-0" style={{ background: teamCol }} aria-hidden="true" />
+    <li className={`well flex items-center gap-2.5 pr-2.5 rounded-[16px] overflow-hidden ${me ? '!bg-sun/[0.07] !border-sun/30' : ''} ${p.connected ? '' : 'opacity-50'}`} data-testid={`slot-${p.id}`}>
+      <span className="self-stretch w-1 shrink-0" style={{ background: teamCol, boxShadow: teams ? `0 0 12px ${teamCol}` : undefined }} aria-hidden="true" />
       <span className="shrink-0 -my-1">
         <Avatar loadout={lookToLoadout(p.look)} size={52} animate={false} team={teams ? p.team : -1} teamColor={TEAM_COLORS[cb][p.team === 1 ? 1 : 0]} />
       </span>
@@ -43,7 +43,7 @@ function PlayerRow({ p, me, hostId, canKick, teams }: { p: LobbyPlayer; me: bool
       {p.isBot ? (
         <Chip>{t('common.bot')}</Chip>
       ) : (
-        <span className={`inline-flex items-center gap-1 text-xs font-extrabold px-2 py-1 rounded-full border-2 border-ink ${p.ready ? 'bg-mint text-ink' : 'bg-panel-2 text-muted'}`}>
+        <span className={`inline-flex items-center gap-1 text-xs font-extrabold px-2.5 py-1 rounded-full ${p.ready ? 'bg-gradient-to-b from-[#c4ffa6] to-[#5fd64a] text-[#0d2a06] shadow-[0_0_12px_-2px_rgb(140_240_106/0.7)]' : 'bg-white/[0.07] text-muted'}`}>
           {p.ready && <Icon name="check" className="w-3.5 h-3.5" strokeWidth={3} />}
           {p.ready ? t('common.ready') : t('common.notReady')}
         </span>
@@ -79,7 +79,7 @@ function Players({ lobby, sess }: { lobby: LobbyStateMsg; sess: SessionSnapshot 
         return (
           <Panel key={team} className="p-3">
             <div className="flex items-center gap-2 mb-2">
-              <span className="w-4 h-4 rounded-full border-2 border-ink" style={{ background: team === 0 ? red : blue }} />
+              <span className="w-4 h-4 rounded-full border-2 border-white/30" style={{ background: team === 0 ? red : blue, boxShadow: `0 0 14px ${team === 0 ? red : blue}` }} />
               <h3 className="font-display font-extrabold text-lg flex-1">{t(team === 0 ? 'team.red' : 'team.blue')}</h3>
               {me && me.team !== team && lobby.phase === 'lobby' && (
                 <Button size="sm" variant="secondary" onClick={() => lobbyAction({ a: 'team', team })} testId={`lobby-team-${team}`}>
@@ -138,8 +138,8 @@ function InviteCard({ code }: { code: string }) {
   };
   return (
     <Panel className="p-3">
-      <div className="text-xs font-bold text-muted uppercase tracking-wider [:root[lang=hi]_&]:tracking-normal">{t('lobby.code')}</div>
-      <div className="font-mono font-extrabold text-4xl md:text-5xl tracking-[0.2em] text-sun select-text [user-select:text] leading-tight" data-testid="lobby-code">
+      <div className="eyebrow">{t('lobby.code')}</div>
+      <div className="well-sunken rounded-[14px] mt-1.5 px-3 py-1 font-mono font-extrabold text-4xl md:text-5xl tracking-[0.2em] text-sun select-text [user-select:text] leading-tight [text-shadow:0_0_18px_rgb(255_200_70/0.45)]" data-testid="lobby-code">
         {code}
       </div>
       <div className="flex gap-2 mt-2">
@@ -161,9 +161,9 @@ function StatusCard({ lobby }: { lobby: LobbyStateMsg }) {
   const motionOk = useMotionOk();
   if (lobby.phase === 'starting') {
     return (
-      <Panel className="p-3 text-center bg-sun/15">
+      <Panel className="p-3 text-center !bg-[linear-gradient(180deg,rgb(255_211_77/0.18),rgb(30_26_40/0.9))] !border-sun/30">
         <div className="text-sm font-bold text-muted">{t('lobby.starting')}</div>
-        <motion.div key={Math.ceil(lobby.countdown)} initial={motionOk ? { scale: 1.5, opacity: 0 } : false} animate={{ scale: 1, opacity: 1 }} className="font-display font-extrabold text-5xl text-sun" data-testid="lobby-countdown">
+        <motion.div key={Math.ceil(lobby.countdown)} initial={motionOk ? { scale: 1.5, opacity: 0 } : false} animate={{ scale: 1, opacity: 1 }} className="font-display font-extrabold text-6xl text-title" data-testid="lobby-countdown">
           {Math.max(0, Math.ceil(lobby.countdown))}
         </motion.div>
       </Panel>
@@ -275,7 +275,7 @@ export function Lobby() {
           {sess.kind === 'online' && !lobby.quickMatch && sess.code && <InviteCard code={sess.code} />}
           {sess.kind === 'lan-host' && (
             <Panel className="p-3">
-              <div className="text-xs font-bold text-muted uppercase tracking-wider [:root[lang=hi]_&]:tracking-normal">{t('lobby.lanAddresses')}</div>
+              <div className="eyebrow">{t('lobby.lanAddresses')}</div>
               {sess.lanAddresses.length ? (
                 <ul className="font-mono font-bold text-lg text-sun select-text [user-select:text]">
                   {sess.lanAddresses.map((a) => (
