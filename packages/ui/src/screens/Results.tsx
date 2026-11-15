@@ -69,7 +69,7 @@ export function Results() {
   const draw = teams ? results.winnerTeam < 0 : results.winner < 0;
   const won = reward?.won ?? (teams ? results.winnerTeam === me?.team : results.winner === meId);
   const banner = practice ? t('results.practice') : survival ? t('results.waves', { n: Math.max(0, results.wave - 1) }) : draw ? t('hud.draw') : won ? t('hud.victory') : t('hud.defeat');
-  const bannerTone = practice || survival ? 'bg-sky' : draw ? 'bg-panel-2 text-text' : won ? 'bg-sun' : 'bg-coral';
+  const bannerTone = practice || survival ? 'from-[#9be6ff] via-[#5ad1ff] to-[#2b8fd6] text-[#032536] shadow-[0_18px_44px_-16px_rgb(90_209_255/0.6)]' : draw ? 'from-[#4a5272] via-[#353b57] to-[#252a3d] text-text' : won ? 'from-[#fff0a6] via-[#ffd34d] to-[#ff9d2e] text-[#2a1d00] shadow-[0_18px_44px_-16px_rgb(255_190_60/0.7)]' : 'from-[#ffb8a0] via-[#ff7a45] to-[#d9432a] text-[#2e0800] shadow-[0_18px_44px_-16px_rgb(255_110_70/0.6)]';
   const winnerName = teams ? (results.winnerTeam >= 0 ? t(results.winnerTeam === 0 ? 'team.red' : 'team.blue') : '') : results.players.find((p) => p.id === results.winner)?.name ?? '';
 
   const mvp = results.players.find((p) => p.id === results.mvp);
@@ -81,10 +81,10 @@ export function Results() {
   const fadeUp = (i: number) => (motionOk ? { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.25 + i * 0.12, duration: 0.24 } } : {});
 
   const row = (p: PlayerResult) => (
-    <tr key={p.id} className={`border-t border-line ${p.id === meId ? 'text-sun font-bold' : ''}`}>
+    <tr key={p.id} className={`border-t border-white/[0.06] ${p.id === meId ? 'text-sun font-bold bg-sun/[0.06]' : ''}`}>
       <td className="py-1.5 pr-2 max-w-[10rem]">
         <span className="flex items-center gap-1.5 min-w-0">
-          {teams && <span className="w-2.5 h-2.5 rounded-full border border-ink shrink-0" style={{ background: p.team === 0 ? red : blue }} />}
+          {teams && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.team === 0 ? red : blue, boxShadow: `0 0 8px ${p.team === 0 ? red : blue}` }} />}
           <span className="truncate">{p.name}</span>
           {p.id === results.mvp && <Chip color="bg-sun text-ink">MVP</Chip>}
           {p.isBot && <span className="text-muted text-xs font-normal">({t('common.bot')})</span>}
@@ -124,18 +124,20 @@ export function Results() {
             initial={motionOk ? { scale: 0.85, opacity: 0 } : false}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className={`rounded-xl border-2 border-ink shadow-chunky-lg px-4 py-3 text-ink ${bannerTone}`}
+            className={`relative overflow-hidden rounded-[var(--radius-xl)] bg-gradient-to-br border border-white/30 px-5 py-4 ${bannerTone}`}
           >
-            <div className="font-display font-extrabold text-3xl md:text-5xl leading-none uppercase">{banner}</div>
-            <div className="text-sm font-bold opacity-80 mt-1">
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/30 to-transparent" />
+            <span aria-hidden="true" className="absolute -right-6 -top-10 w-40 h-40 rounded-full bg-white/15 blur-2xl" />
+            <div className="relative font-display font-extrabold text-4xl md:text-6xl leading-none uppercase tracking-wide [:root[lang=hi]_&]:tracking-normal [:root[lang=hi]_&]:leading-[1.25]">{banner}</div>
+            <div className="relative text-sm font-bold opacity-80 mt-1.5">
               {modeName(results.mode)} · {mapName(results.mapId)}
               {!practice && !survival && winnerName && ` · ${t('results.winner', { name: winnerName })}`}
             </div>
             {teams && (
-              <div className="flex items-center gap-3 mt-2 font-display font-extrabold text-2xl">
-                <span className="px-2 rounded-md border-2 border-ink text-white" style={{ background: red }}>{results.teamScores[0]}</span>
+              <div className="relative flex items-center gap-3 mt-2.5 font-display font-extrabold text-2xl tabular-nums">
+                <span className="min-w-12 text-center px-3 py-0.5 rounded-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_4px_12px_rgb(0_0_0/0.3)]" style={{ background: red }}>{results.teamScores[0]}</span>
                 <span className="text-base">{t('results.vs')}</span>
-                <span className="px-2 rounded-md border-2 border-ink text-white" style={{ background: blue }}>{results.teamScores[1]}</span>
+                <span className="min-w-12 text-center px-3 py-0.5 rounded-[12px] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_4px_12px_rgb(0_0_0/0.3)]" style={{ background: blue }}>{results.teamScores[1]}</span>
               </div>
             )}
           </motion.div>
@@ -168,7 +170,7 @@ export function Results() {
                     </motion.li>
                   ))}
                 </ul>
-                <div className="flex items-center justify-between border-t-2 border-line pt-1.5 font-display font-extrabold">
+                <div className="flex items-center justify-between border-t border-white/10 pt-2 font-display font-extrabold text-lg">
                   <span>{t('results.total')}</span>
                   <span className="flex items-center gap-3">
                     <span className="text-sky">+{reward.xp} XP</span>
@@ -183,7 +185,7 @@ export function Results() {
                     initial={motionOk ? { scale: 0.6, opacity: 0 } : false}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: motionOk ? 1.25 : 0, type: 'spring', stiffness: 320, damping: 14 }}
-                    className="rounded-lg border-2 border-ink bg-sun text-ink p-2.5 shadow-chunky"
+                    className="relative overflow-hidden rounded-[18px] bg-gradient-to-br from-[#fff0a6] via-[#ffd34d] to-[#ff9d2e] text-[#2a1d00] p-3 shadow-[0_14px_34px_-12px_rgb(255_190_60/0.7)] border border-white/40"
                     data-testid="level-up"
                   >
                     <div className="font-display font-extrabold text-2xl leading-none">{t('results.levelUp', { n: reward.levelAfter })}</div>
@@ -223,7 +225,7 @@ export function Results() {
           <Panel className="p-3 overflow-x-auto">
             <SectionTitle className="!px-0">{t('game.scoreboard')}</SectionTitle>
             <table className="w-full text-sm text-left">
-              <thead className="text-muted text-xs uppercase">
+              <thead className="eyebrow !text-[0.65rem]">
                 <tr>
                   <th className="py-1 font-bold">{t('game.player')}</th>
                   <th className="text-right px-1.5 font-bold">{t('stats.score')}</th>

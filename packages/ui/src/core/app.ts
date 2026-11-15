@@ -490,7 +490,7 @@ function regionUrl(): Region {
   return st.regions.find((r) => r.id === st.settings.network.region) ?? st.regions[0];
 }
 
-async function onlineSession(join: import('@game/net/online').OnlineJoin): Promise<void> {
+async function onlineSession(join: import('@game/net/online').OnlineJoin, silent = false): Promise<void> {
   const { connectOnline } = await import('@game/net/online');
   const region = regionUrl();
   let conn;
@@ -498,7 +498,7 @@ async function onlineSession(join: import('@game/net/online').OnlineJoin): Promi
     conn = await connectOnline(region.url, join);
   } catch (e) {
     const msg = String((e as Error)?.message ?? e);
-    toast(/not found|invalid|no rooms/i.test(msg) ? 'error.notFound' : 'error.server', 'error');
+    if (!silent) toast(/not found|invalid|no rooms/i.test(msg) ? 'error.notFound' : 'error.server', 'error');
     throw e;
   }
   const client = new GameClient(conn.transport, hello());
@@ -524,6 +524,26 @@ async function onlineSession(join: import('@game/net/online').OnlineJoin): Promi
 }
 
 export const quickMatch = () => onlineSession({ kind: 'quick', region: regionUrl().id });
+
+/** Arena maps that suit an instant 8-player team match. */
+const FALLBACK_MAPS = ['volcano-base', 'rooftop-dusk', 'desert-canyon', 'shipyard', 'jungle-temple', 'orbital-station'];
+
+/**
+ * The main Play button: join an online quick match, or — when the game server cannot be reached
+ * (offline, server down, not deployed) — drop straight into an offline team match with bots
+ * instead of dead-ending on an error. Resolves to where the player ended up.
+ */
+export async function quickMatchOrOffline(): Promise<'online' | 'offline'> {
+  try {
+    await onlineSession({ kind: 'quick', region: regionUrl().id }, true);
+    return 'online';
+  } catch {
+    toast('error.offlineFallback', 'info');
+    const mapId = FALLBACK_MAPS[Math.floor(Math.random() * FALLBACK_MAPS.length)];
+    startOffline({ mapId, mode: 'tdm', botCount: 7, botDifficulty: 1 }, 'match');
+    return 'offline';
+  }
+}
 export const createPrivateRoom = (settings: Partial<LobbySettings>) => onlineSession({ kind: 'create', region: regionUrl().id, settings });
 export const joinPrivateRoom = (code: string) => onlineSession({ kind: 'join', code });
 

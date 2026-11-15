@@ -154,7 +154,7 @@ function LayoutEditor({ s }: { s: Settings }) {
             onPointerCancel={onUp}
             onKeyDown={onKey(k)}
             onClick={() => setSel(k)}
-            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center overflow-hidden font-extrabold text-ink cursor-grab active:cursor-grabbing border-2 ${on ? 'border-sun ring-4 ring-sun/50 z-10' : 'border-ink'} ${c.visible ? 'bg-text' : 'bg-transparent border-dashed !text-muted'}`}
+            className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center overflow-hidden font-extrabold text-ink cursor-grab active:cursor-grabbing border-2 ${on ? 'border-sun ring-4 ring-sun/40 z-10 shadow-[0_0_20px_rgb(255_200_70/0.6)]' : 'border-white/50'} ${c.visible ? 'bg-white/85 backdrop-blur-sm' : 'bg-transparent border-dashed !text-muted'}`}
             style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%`, height: `${d}%`, aspectRatio: '1', fontSize: `${(d * (STICKS.includes(k) ? 0.16 : 0.24)).toFixed(2)}cqh`, opacity: c.visible ? Math.max(0.35, c.opacity) : 0.6 }}
           >
             <span className="px-0.5 leading-none text-center">{t(`touch.${k}.short`)}</span>
@@ -168,9 +168,9 @@ function LayoutEditor({ s }: { s: Settings }) {
 
   if (full) {
     return (
-      <div role="dialog" aria-modal="true" aria-label={t('settings.layoutEditor')} className="fixed inset-0 z-50 bg-night">
+      <div role="dialog" aria-modal="true" aria-label={t('settings.layoutEditor')} className="fixed inset-0 z-50 bg-[radial-gradient(120%_100%_at_50%_0%,#1d1a3a,#07080f)]">
         {canvas('absolute inset-0')}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-1.5 max-w-[min(96vw,40rem)] px-2 py-1.5 rounded-lg border-2 border-ink bg-panel/95 shadow-soft">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-1.5 max-w-[min(96vw,40rem)] px-2.5 py-2 rounded-[18px] glass">
           <span className="font-display font-extrabold text-sun px-1 truncate max-w-[9rem]">{t(`touch.${sel}`)}</span>
           <span className="inline-flex items-center gap-1 text-xs font-bold text-muted">
             {t('settings.size')}
@@ -210,7 +210,7 @@ function LayoutEditor({ s }: { s: Settings }) {
   return (
     <div className="grid md:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)] gap-3">
       <div className="min-w-0">
-        {canvas('relative w-full max-w-[calc(52vh*16/9)] mx-auto aspect-video rounded-lg border-2 border-ink')}
+        {canvas('relative w-full max-w-[calc(52vh*16/9)] mx-auto aspect-video rounded-[18px] border border-white/10 shadow-[inset_0_1px_0_rgb(255_255_255/0.06),0_18px_40px_-18px_rgb(0_0_0/0.9)]')}
         <p className="text-xs text-muted mt-1">{t('settings.layoutHint')}</p>
       </div>
       <div className="flex flex-col gap-3">
@@ -302,7 +302,7 @@ function Keymap({ s }: { s: Settings }) {
       </Panel>
       <Panel className="py-1.5">
         {ACTIONS.map((a) => (
-          <div key={a} className="flex items-center gap-2 min-h-12 px-3 border-b border-line/50 last:border-b-0">
+          <div key={a} className="flex items-center gap-2 min-h-12 px-3 border-b border-white/[0.06] last:border-b-0">
             <span className="flex-1 min-w-0 truncate">{t(`action.${a}`)}</span>
             <span className="flex flex-wrap gap-1 justify-end">
               {(map[a] ?? []).map((code) => (
@@ -312,7 +312,7 @@ function Keymap({ s }: { s: Settings }) {
                   title={t('settings.unbind', { key: keyLabel(code) })}
                   disabled={(map[a] ?? []).length <= 1}
                   onClick={() => unbind(a, code)}
-                  className="group inline-flex items-center gap-1 min-h-9 px-2 rounded-md border-2 border-ink bg-night font-mono font-bold text-sm hover:bg-danger/30 disabled:hover:bg-night"
+                  className="group inline-flex items-center gap-1 min-h-9 px-2 rounded-[10px] well-sunken font-mono font-bold text-sm hover:!bg-danger/25 disabled:hover:!bg-black/40"
                 >
                   {keyLabel(code)}
                   {(map[a] ?? []).length > 1 && <Icon name="x" className="w-3 h-3 text-muted group-hover:text-text" />}
@@ -336,7 +336,7 @@ function Keymap({ s }: { s: Settings }) {
           role="dialog"
           aria-modal="true"
           aria-label={t('settings.pressKey')}
-          className="fixed inset-0 z-50 grid place-items-center bg-night/80 safe"
+          className="fixed inset-0 z-50 grid place-items-center bg-[#05060c]/85 safe"
           onMouseDown={(e) => {
             e.preventDefault();
             bind(listen, `Mouse${e.button}`);
@@ -344,9 +344,9 @@ function Keymap({ s }: { s: Settings }) {
           onContextMenu={(e) => e.preventDefault()}
           data-testid="bind-overlay"
         >
-          <div className="bg-panel border-2 border-ink rounded-xl p-6 text-center shadow-soft max-w-md">
+          <div className="glass rounded-[var(--radius-xl)] p-7 text-center max-w-md">
             <div className="text-sm text-muted font-bold">{t(`action.${listen}`)}</div>
-            <div className="font-display font-extrabold text-2xl text-sun my-2">{t('settings.pressKey')}</div>
+            <div className="font-display font-extrabold text-3xl text-title my-2">{t('settings.pressKey')}</div>
             <div className="text-sm text-muted">{t(listen === 'pause' ? 'settings.pressKeyPause' : 'settings.pressKeyHint')}</div>
           </div>
         </div>
@@ -375,9 +375,9 @@ function Gamepad() {
     <Panel className="py-1.5">
       <p className="text-sm text-muted px-3 py-1">{t('settings.padNote')}</p>
       {PAD.map(([a, b]) => (
-        <div key={a} className="flex items-center justify-between min-h-11 px-3 border-b border-line/50 last:border-b-0">
+        <div key={a} className="flex items-center justify-between min-h-11 px-3 border-b border-white/[0.06] last:border-b-0">
           <span>{t(a)}</span>
-          <span className="min-w-10 text-center px-2 py-0.5 rounded-md border-2 border-ink bg-night font-bold text-sm">{b.startsWith('pad.') ? t(b) : b}</span>
+          <span className="min-w-10 text-center px-2.5 py-1 rounded-[10px] well-sunken font-bold text-sm">{b.startsWith('pad.') ? t(b) : b}</span>
         </div>
       ))}
     </Panel>
@@ -442,11 +442,11 @@ function Accessibility({ s }: { s: Settings }) {
                   sfx('ui_toggle');
                   patch('accessibility', { colorblind: p });
                 }}
-                className={`flex flex-col items-start gap-1.5 p-2.5 rounded-md border-2 border-ink text-left min-h-12 ${on ? 'bg-panel-2 ring-4 ring-sun' : 'bg-night/40 hover:bg-panel-2'}`}
+                className={`well flex flex-col items-start gap-2 p-3 rounded-[16px] text-left min-h-12 transition-all duration-[var(--duration-fast)] ${on ? 'selected-ring' : 'hover:!bg-white/[0.07]'}`}
               >
                 <span className="flex gap-1">
                   {TEAM_COLORS[p].map((c, i) => (
-                    <span key={i} className="w-7 h-7 rounded-full border-2 border-ink" style={{ background: hex(c) }} />
+                    <span key={i} className="w-7 h-7 rounded-full border-2 border-white/25 shadow-[inset_0_-3px_6px_rgb(0_0_0/0.25),0_2px_8px_rgb(0_0_0/0.4)]" style={{ background: hex(c) }} />
                   ))}
                 </span>
                 <span className="font-bold text-sm">{t(`settings.cb.${p}`)}</span>
@@ -494,9 +494,9 @@ function Network({ s }: { s: Settings }) {
                   sfx('ui_toggle');
                   patch('network', { region: r.id });
                 }}
-                className={`flex items-center gap-3 min-h-12 px-3 rounded-md border-2 border-ink text-left ${on ? 'bg-panel-2 ring-2 ring-sun' : 'bg-night/40 hover:bg-panel-2'}`}
+                className={`well flex items-center gap-3 min-h-12 px-3.5 rounded-[14px] text-left transition-all duration-[var(--duration-fast)] ${on ? 'selected-ring !bg-sun/[0.07]' : 'hover:!bg-white/[0.07]'}`}
               >
-                <span className={`w-4 h-4 rounded-full border-2 border-ink ${on ? 'bg-sun' : 'bg-line'}`} />
+                <span className={`grid place-items-center w-5 h-5 rounded-full shrink-0 ${on ? 'bg-gradient-to-b from-[#ffe58a] to-[#ffb92e] shadow-[0_0_10px_rgb(255_200_70/0.7)]' : 'bg-white/10 shadow-[inset_0_1px_3px_rgb(0_0_0/0.5)]'}`}>{on && <span className="w-2 h-2 rounded-full bg-[#2a1d00]" />}</span>
                 <span className="flex-1 font-bold">{r.name}</span>
                 <PingBadge ms={pings[r.id]} />
               </button>
@@ -540,12 +540,12 @@ function Language({ s }: { s: Settings }) {
               sfx('ui_toggle');
               updateSettings((st) => ({ ...st, language: o.id }));
             }}
-            className={`flex items-center gap-3 min-h-16 p-4 rounded-lg border-2 border-ink shadow-chunky text-left ${on ? 'bg-sun text-ink' : 'bg-panel hover:bg-panel-2'}`}
+            className={`tile flex items-center gap-3 min-h-16 p-4 rounded-[20px] text-left hover:-translate-y-0.5 ${on ? 'selected-ring' : ''}`}
           >
-            <span className={`grid place-items-center w-8 h-8 rounded-full border-2 border-ink ${on ? 'bg-ink text-sun' : 'bg-panel-2'}`}>{on && <Icon name="check" className="w-5 h-5" strokeWidth={3} />}</span>
+            <span className={`grid place-items-center w-8 h-8 rounded-full shrink-0 ${on ? 'bg-gradient-to-b from-[#ffe58a] to-[#ffb92e] text-[#2a1d00] shadow-[0_0_14px_rgb(255_200_70/0.6)]' : 'bg-white/10'}`}>{on && <Icon name="check" className="w-5 h-5" strokeWidth={3} />}</span>
             <span>
               <span className="block font-display font-extrabold text-2xl leading-tight">{o.label}</span>
-              <span className={`block text-sm ${on ? 'text-ink/70' : 'text-muted'}`}>{o.sub}</span>
+              <span className="block text-sm text-muted">{o.sub}</span>
             </span>
           </button>
         );
@@ -561,7 +561,11 @@ export function SettingsScreen() {
     <Page
       title={t('nav.settings')}
       testId="settings"
-      toolbar={<Tabs value={tab} onChange={setTab} testIdPrefix="settings-tab-" className="max-w-5xl mx-auto" options={TABS.map((id) => ({ value: id, label: t(`settings.tab.${id}`) }))} />}
+      toolbar={
+        <div className="max-w-5xl mx-auto">
+          <Tabs value={tab} onChange={setTab} testIdPrefix="settings-tab-" options={TABS.map((id) => ({ value: id, label: t(`settings.tab.${id}`) }))} />
+        </div>
+      }
     >
       <div className="flex flex-col gap-3 max-w-5xl mx-auto w-full">
         <div key={tab}>

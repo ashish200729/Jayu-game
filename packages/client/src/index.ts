@@ -3,6 +3,7 @@ import type { GameClient } from '@game/net';
 import { audio } from './audio';
 import { Controls } from './input/controls';
 import { GameContext, type ClientSettings, type GameCallbacks } from './game/context';
+import { BackdropScene } from './game/BackdropScene';
 import { GameScene } from './game/GameScene';
 import { HudScene } from './game/HudScene';
 
@@ -30,6 +31,17 @@ export interface GameHandle {
 function pixelRatio(q: ClientSettings['graphics']['quality']): number {
   const dpr = window.devicePixelRatio || 1;
   return q === 'low' ? 1 : q === 'medium' ? Math.min(dpr, 1.5) : Math.min(dpr, 2);
+}
+
+let fontsReady: Promise<void> | null = null;
+function loadGameFonts(): Promise<void> {
+  if (fontsReady) return fontsReady;
+  const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+  if (!fonts?.load) return (fontsReady = Promise.resolve());
+  const want = ['800 16px "Baloo 2"', '700 16px "Baloo 2"', '700 16px "Noto Sans Devanagari"'].map((f) => fonts.load(f).catch(() => []));
+  const timeout = new Promise<void>((r) => setTimeout(r, 1500));
+  fontsReady = Promise.race([Promise.all(want).then(() => undefined), timeout]);
+  return fontsReady;
 }
 
 /** Mount the Phaser game into `parent`. Phaser is only used for rendering, audio playback hooks and input capture. */
@@ -60,9 +72,15 @@ export function mountGame(parent: HTMLElement, opts: MountOptions): GameHandle {
     input: { activePointers: 6, gamepad: false },
     render: { powerPreference: 'high-performance', antialias: true },
   });
+  let destroyed = false;
   game.events.once(Phaser.Core.Events.READY, () => {
-    game.scene.add('game', GameScene, true, { ctx });
-    game.scene.add('hud', HudScene, true, { ctx });
+    // Canvas text only uses a web font that is already loaded; wait briefly so the HUD never falls back.
+    void loadGameFonts().then(() => {
+      if (destroyed) return;
+      game.scene.add('backdrop', BackdropScene, true, { ctx });
+      game.scene.add('game', GameScene, true, { ctx });
+      game.scene.add('hud', HudScene, true, { ctx });
+    });
   });
   const resize = () => {
     const nw = Math.max(320, parent.clientWidth);
@@ -89,6 +107,7 @@ export function mountGame(parent: HTMLElement, opts: MountOptions): GameHandle {
       controls.signal(value);
     },
     destroy() {
+      destroyed = true;
       ro.disconnect();
       controls.destroy();
       opts.client.sampler = null;

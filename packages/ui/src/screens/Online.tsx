@@ -134,9 +134,9 @@ export function Online() {
                       sfx('ui_toggle');
                       updateSettings((s) => ({ ...s, network: { ...s.network, region: r.id } }));
                     }}
-                    className={`flex items-center gap-3 min-h-12 px-3 rounded-md border-2 border-ink text-left ${on ? 'bg-panel-2 ring-2 ring-sun' : 'bg-night/40 hover:bg-panel-2'}`}
+                    className={`well flex items-center gap-3 min-h-12 px-3.5 rounded-[14px] text-left transition-all duration-[var(--duration-fast)] ${on ? 'selected-ring !bg-sun/[0.07]' : 'hover:!bg-white/[0.07]'}`}
                   >
-                    <span className={`w-4 h-4 rounded-full border-2 border-ink ${on ? 'bg-sun' : 'bg-line'}`} />
+                    <span className={`grid place-items-center w-5 h-5 rounded-full shrink-0 ${on ? 'bg-gradient-to-b from-[#ffe58a] to-[#ffb92e] shadow-[0_0_10px_rgb(255_200_70/0.7)]' : 'bg-white/10 shadow-[inset_0_1px_3px_rgb(0_0_0/0.5)]'}`}>{on && <span className="w-2 h-2 rounded-full bg-[#2a1d00]" />}</span>
                     <span className="font-bold flex-1 truncate">{r.name}</span>
                     <PingBadge ms={refreshing ? undefined : pings[r.id]} />
                   </button>

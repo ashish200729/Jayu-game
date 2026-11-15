@@ -4,11 +4,20 @@ import { getMap, type MapData } from '@game/maps';
 import type { ClientView, PlayerView } from '@game/net';
 import { EventType, World, angleToRad, type SimEvent } from '@game/sim';
 import { audio, type Sfx } from '../audio';
-import { weaponIcon } from '../art/characters';
-import { buildBackdrop, buildCommonTextures, buildMapChunks, liquidRects } from '../art/world';
+import { CHAR_SCALE, weaponIcon } from '../art/characters';
+import { GAME_FONT } from '../art/draw';
+import { SPR, buildCommonTextures, buildMapChunks, liquidRects } from '../art/world';
+import type { BackdropScene } from './BackdropScene';
 import { Fx } from './fx';
 import { CharacterRig } from './rig';
 import type { GameContext } from './context';
+
+/** World pixels of height the camera shows (before weapon scope zoom). Characters are ~46 px tall. */
+export const VIEW_HEIGHT_TOUCH = 430;
+export const VIEW_HEIGHT_DESKTOP = 540;
+/** Sprite scale helpers for hi-res textures. */
+const spr = (s: number) => s / SPR;
+const gs = (s: number) => (s * 2) / CHAR_SCALE;
 
 const SHOT_SFX: Record<string, Sfx> = {
   light: 'shot_light',
@@ -38,9 +47,8 @@ export class GameScene extends Phaser.Scene {
   private rigs = new Map<number, CharacterRig>();
   private sprites = new Map<string, Phaser.GameObjects.Image>();
   private seenSprites = new Set<string>();
-  private bgLayers: Phaser.GameObjects.TileSprite[] = [];
-  private sky!: Phaser.GameObjects.Image;
-  private liquids: { img: Phaser.GameObjects.Rectangle; surf: Phaser.GameObjects.Rectangle | null; kind: string; y: number }[] = [];
+  private backdrop: BackdropScene | null = null;
+  private liquids: { img: Phaser.GameObjects.TileSprite; surf: Phaser.GameObjects.TileSprite | null; glow: Phaser.GameObjects.Image | null; kind: string; x: number; y: number; w: number }[] = [];
   private movers: Phaser.GameObjects.TileSprite[] = [];
   private zoneGfx!: Phaser.GameObjects.Graphics;
   private arcGfx!: Phaser.GameObjects.Graphics;
@@ -78,46 +86,68 @@ export class GameScene extends Phaser.Scene {
     this.world = new World(this.map, config.lowGravity);
     buildCommonTextures(this);
     const th = this.map.theme;
-    // Sky + parallax.
-    const { sky, layers } = buildBackdrop(this, th, this.map.id);
-    this.sky = this.add.image(0, 0, sky).setOrigin(0, 0).setScrollFactor(0).setDepth(0);
-    layers.forEach((key, i) => {
-      const ts = this.add.tileSprite(0, 0, this.scale.width, 512, key).setOrigin(0, 1).setScrollFactor(0).setDepth(1 + i);
-      this.bgLayers.push(ts);
-    });
-    // Static tiles.
-    for (const ch of buildMapChunks(this, this.map)) this.add.image(ch.x, ch.y, ch.key).setOrigin(0, 0).setDepth(10);
-    // Liquids (animated).
+    this.backdrop = (this.scene.get('backdrop') as BackdropScene | null) ?? null;
+    // Static tiles, rendered at roughly the expected on-screen zoom so they stay crisp.
+    const q = this.ctx.settings().graphics.quality;
+    const expectedZoom = this.scale.height / (this.ctx.isTouch ? VIEW_HEIGHT_TOUCH : VIEW_HEIGHT_DESKTOP);
+    const res = q === 'low' ? 1 : Math.max(1, Math.min(q === 'medium' ? 1.5 : 2.5, Math.round(expectedZoom * 2) / 2));
+    for (const ch of buildMapChunks(this, this.map, res)) this.add.image(ch.x, ch.y, ch.key).setOrigin(0, 0).setScale(1 / ch.res).setDepth(10);
+    // Liquids (animated, scrolling textures with a wavy surface and a heat/shine glow).
     for (const l of liquidRects(this.map)) {
-      const color = l.kind === 'water' ? 0x3aa0ff : 0xff6a1f;
-      const img = this.add.rectangle(l.x, l.y, l.w, l.h, color, l.kind === 'water' ? 0.42 : 0.92).setOrigin(0, 0).setDepth(l.kind === 'water' ? 48 : 12);
-      const surf = l.surface ? this.add.rectangle(l.x, l.y, l.w, 4, l.kind === 'water' ? 0xbfe6ff : 0xffd34d, 0.9).setOrigin(0, 0).setDepth(49) : null;
-      this.liquids.push({ img, surf, kind: l.kind, y: l.y });
+      const lava = l.kind === 'lava';
+      const img = this.add
+        .tileSprite(l.x, l.y + (l.surface ? 3 : 0), l.w, l.h - (l.surface ? 3 : 0), lava ? 'lava' : 'water')
+        .setOrigin(0, 0)
+        .setTileScale(0.5, l.surface ? 0.5 : 0.25)
+        .setDepth(lava ? 12 : 48);
+      if (!l.surface) img.setTilePosition(0, 40);
+      const surf = l.surface
+        ? this.add
+            .tileSprite(l.x, l.y - 1, l.w, 6, 'surf')
+            .setOrigin(0, 0)
+            .setTileScale(0.5)
+            .setTint(lava ? 0xffe27a : 0xd8f3ff)
+            .setAlpha(lava ? 1 : 0.8)
+            .setDepth(lava ? 13 : 49)
+        : null;
+      const glow =
+        l.surface && lava
+          ? this.add
+              .image(l.x + l.w / 2, l.y, 'dot')
+              .setDisplaySize(l.w + 40, 90)
+              .setTint(0xff7a1f)
+              .setAlpha(0.35)
+              .setBlendMode(Phaser.BlendModes.ADD)
+              .setDepth(14)
+          : null;
+      this.liquids.push({ img, surf, glow, kind: l.kind, x: l.x, y: l.y, w: l.w });
     }
-    // Movers.
+    // Movers (2x textures).
     for (const m of this.map.movers) {
       const key = m.kind === 'door' ? 'door' : m.kind === 'bridge' ? 'bridge' : 'platform';
-      const ts = this.add.tileSprite(m.x, m.y, m.w, m.kind === 'platform' ? 14 : m.h, key).setOrigin(0, 0).setDepth(11);
+      const ts = this.add
+        .tileSprite(m.x, m.y, m.w, m.kind === 'platform' ? 14 : m.h, key)
+        .setOrigin(0, 0)
+        .setTileScale(0.5)
+        .setDepth(11);
       this.movers.push(ts);
     }
     this.zoneGfx = this.add.graphics().setDepth(23);
     this.arcGfx = this.add.graphics().setDepth(94);
-    this.reticle = this.add.image(0, 0, 'reticle').setDepth(95).setScale(0.6).setAlpha(0.85);
-    this.hitmark = this.add.image(0, 0, 'hitmark').setDepth(96).setScale(0.7).setVisible(false);
+    this.reticle = this.add.image(0, 0, 'reticle').setDepth(95).setScale(spr(0.6)).setAlpha(0.9);
+    this.hitmark = this.add.image(0, 0, 'hitmark').setDepth(96).setScale(spr(0.7)).setVisible(false);
     this.fx = new Fx(this);
     this.fx.world = this.world;
-    this.fx.setQuality(this.ctx.settings().graphics.quality);
-    // Darkness for dark maps.
+    this.fx.setQuality(q);
+    // Darkness for dark maps: a low-res light mask placed over the camera's world view each frame.
     if (th.dark) {
-      const w = Math.ceil(this.scale.width / 4);
-      const h = Math.ceil(this.scale.height / 4);
-      this.dark = this.textures.createCanvas('darkness', w, h);
-      this.darkImg = this.add.image(0, 0, 'darkness').setOrigin(0, 0).setScrollFactor(0).setDepth(90).setScale(4);
+      this.dark = this.textures.createCanvas('darkness', Math.ceil(this.scale.width / 4), Math.ceil(this.scale.height / 4));
+      this.darkImg = this.add.image(0, 0, 'darkness').setOrigin(0, 0).setDepth(90);
     }
     this.buildWeather();
     const cam = this.cameras.main;
     cam.setBounds(0, 0, this.world.pxW, this.world.pxH);
-    cam.setBackgroundColor(th.skyBottom);
+    cam.setRoundPixels(false);
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.cleanup());
     this.onResize();
@@ -137,13 +167,12 @@ export class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     this.cameras.main.setSize(w, h);
-    this.sky.setDisplaySize(w, h);
-    this.bgLayers.forEach((l) => l.setSize(w, 512));
     if (this.dark) {
       this.dark.setSize(Math.ceil(w / 4), Math.ceil(h / 4));
     }
   }
 
+  /** Weather lives in world space, wrapped around the camera view, so it zooms with the world. */
   private buildWeather(): void {
     const kind = this.map.theme.weather;
     if (kind === 'none') return;
@@ -153,7 +182,6 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < n; i++) {
       const img = this.add
         .image(0, 0, kind === 'rain' ? 'spark' : 'dot')
-        .setScrollFactor(0)
         .setDepth(80)
         .setTint(tint)
         .setAlpha(kind === 'rain' ? 0.5 : 0.7)
@@ -161,7 +189,7 @@ export class GameScene extends Phaser.Scene {
         .setBlendMode(kind === 'embers' || kind === 'spores' ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL);
       if (kind === 'rain') img.setRotation(Math.PI / 2 + 0.2);
       const speed = { snow: [-20, 60], rain: [-120, 700], sand: [380, 40], embers: [10, -60], dust: [40, 10], spores: [8, -20] }[kind];
-      this.weather.push({ img, x: Math.random() * this.scale.width, y: Math.random() * this.scale.height, vx: speed[0] * (0.7 + Math.random() * 0.6), vy: speed[1] * (0.7 + Math.random() * 0.6) });
+      this.weather.push({ img, x: Math.random() * 900, y: Math.random() * 600, vx: speed[0] * (0.7 + Math.random() * 0.6), vy: speed[1] * (0.7 + Math.random() * 0.6) });
     }
   }
 
@@ -190,7 +218,7 @@ export class GameScene extends Phaser.Scene {
     this.updateZoneAndFlags(view, now);
     this.updateCamera(view, dt);
     this.updateReticle(view, dt);
-    this.updateParallax(now);
+    this.updateLiquids(now, dt);
     this.updateWeather(dt);
     this.fx.update(dt);
     if (this.dark) this.updateDarkness(view, now);
@@ -237,7 +265,7 @@ export class GameScene extends Phaser.Scene {
       const look = roster?.look?.length ? roster.look.map((id) => cosmeticIdx(id)) : defaultLook(p.id);
       const teamColor = ctx.teamColor(p.team);
       if (!rig) {
-        rig = new CharacterRig(this, look, p.team, teamColor);
+        rig = new CharacterRig(this, look, p.team, teamColor, Math.min(4, Math.max(2, Math.ceil(this.zoom * 1.2))));
         rig.setDepth(p.id === me?.id ? 44 : 40);
         this.rigs.set(p.id, rig);
       } else rig.setLook(look, p.team, teamColor);
@@ -248,32 +276,50 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
       const aim = p.id === me?.id ? view.localAim : p.aim;
-      rig.update(p, aim, dt, now);
+      rig.update(p, aim, dt, now, ctx.settings().accessibility.reduceMotion);
+      // Contact shadow on the floor below.
+      let gap = -1;
+      for (let k = 0; k <= 176; k += 8) {
+        if (this.world.solidAtPoint(p.x, p.y + k + 1, view.tick)) {
+          gap = k;
+          break;
+        }
+      }
+      rig.setShadow(p.x, gap >= 0 ? p.y + gap : null, Math.max(0, gap));
       // Name tag, health bar, markers.
       const enemy = !!me && p.id !== me.id && (p.team < 0 || p.team !== me.team);
       const name = p.dummy ? ctx.callbacks.t('hud.dummy') : ctx.client.playerName(p.id);
       if (rig.label.text !== name) rig.label.setText(name);
-      rig.label.setPosition(p.x, p.y - (p.crouch ? 44 : 56));
+      const top = p.y - (p.crouch ? 40 : 52);
+      const showHp = p.id !== me?.id && (p.hp < p.maxHp || hc);
+      rig.label.setPosition(p.x, top - (showHp ? 7 : 2));
       rig.label.setColor(p.id === me?.id ? '#ffd34d' : p.team >= 0 ? hexStr(teamColor) : enemy && hc ? '#ff3b3b' : '#ffffff');
       rig.label.setVisible(p.id !== me?.id || ctx.settings().accessibility.highContrast);
       const g = rig.hpBar;
       g.clear();
-      if (p.id !== me?.id && (p.hp < p.maxHp || hc)) {
-        const w = 30;
-        g.fillStyle(0x1b1d26, 0.8).fillRect(p.x - w / 2 - 1, p.y - (p.crouch ? 42 : 54), w + 2, 5);
-        g.fillStyle(enemy ? 0xff5a4f : 0x7dff7a, 1).fillRect(p.x - w / 2, p.y - (p.crouch ? 41 : 53), (w * Math.max(0, p.hp)) / p.maxHp, 3);
+      if (showHp) {
+        const w = 28;
+        const frac = Math.max(0, p.hp) / p.maxHp;
+        g.fillStyle(0x0d0f16, 0.85).fillRoundedRect(p.x - w / 2 - 1.5, top - 4.5, w + 3, 6, 3);
+        g.fillStyle(enemy ? 0xff5a4f : 0x7dff7a, 1).fillRoundedRect(p.x - w / 2, top - 3, Math.max(3, w * frac), 3, 1.5);
+        g.fillStyle(0xffffff, 0.35).fillRect(p.x - w / 2 + 1, top - 3, Math.max(0, w * frac - 2), 1);
       }
       if (hc && enemy) g.lineStyle(2, 0xff3b3b, 0.9).strokeRect(p.x - 13, p.y - (p.crouch ? 32 : 46), 26, p.crouch ? 32 : 46);
       // Team shape marker for colour-blind clarity: triangle (red) / circle (blue).
+      const lh = rig.label.visible ? rig.label.displayHeight : 0;
+      const my = top - (showHp ? 7 : 2) - lh - 4;
       if (p.team >= 0 && p.id !== me?.id) {
+        g.fillStyle(0x0d0f16, 0.8);
+        if (p.team === 0) g.fillTriangle(p.x - 5.5, my - 6.5, p.x + 5.5, my - 6.5, p.x, my + 1.5);
+        else g.fillCircle(p.x, my - 3, 5);
         g.fillStyle(teamColor, 1);
-        if (p.team === 0) g.fillTriangle(p.x - 4, p.y - 66, p.x + 4, p.y - 66, p.x, p.y - 60);
-        else g.fillCircle(p.x, p.y - 63, 3.5);
+        if (p.team === 0) g.fillTriangle(p.x - 4, my - 5.5, p.x + 4, my - 5.5, p.x, my);
+        else g.fillCircle(p.x, my - 3, 3.5);
       }
-      if (p.leader) rig.marker.setTexture('crown').setVisible(true).setPosition(p.x, p.y - 74);
-      else if (p.bomb) rig.marker.setTexture('bomb').setVisible(true).setPosition(p.x, p.y - 76).setScale(0.9 + Math.sin(now * 0.02) * 0.1);
-      else if (p.carrying >= 0) rig.marker.setTexture(`flag:${p.carrying}`).setVisible(true).setPosition(p.x - 6, p.y - 40).setScale(0.7);
-      else if (p.emoteT > 0 && p.emote > 0) rig.marker.setTexture(`emote:${p.emote}`).setVisible(this.ensureEmote(p.emote)).setPosition(p.x, p.y - 80).setScale(1);
+      if (p.leader) rig.marker.setTexture('crown').setVisible(true).setPosition(p.x, my - 14).setScale(spr(0.75));
+      else if (p.bomb) rig.marker.setTexture('bomb').setVisible(true).setPosition(p.x, my - 16).setScale(spr(0.9 + Math.sin(now * 0.02) * 0.1));
+      else if (p.carrying >= 0) rig.marker.setTexture(`flag:${p.carrying}`).setVisible(true).setPosition(p.x - 6, p.y - 40).setScale(spr(0.7));
+      else if (p.emoteT > 0 && p.emote > 0) rig.marker.setTexture(`emote:${p.emote}`).setVisible(this.ensureEmote(p.emote)).setPosition(p.x, my - 20).setScale(0.25);
       else rig.marker.setVisible(false);
       // Jetpack audio + smoke.
       this.setJet(p.id, p.jetting, p);
@@ -308,12 +354,16 @@ export class GameScene extends Phaser.Scene {
     const key = `emote:${v}`;
     if (!this.textures.exists(key)) {
       const c = document.createElement('canvas');
-      c.width = 64;
-      c.height = 64;
+      c.width = 128;
+      c.height = 128;
       const g = c.getContext('2d')!;
+      g.scale(2, 2);
+      g.shadowColor = 'rgba(0,0,0,0.35)';
+      g.shadowBlur = 4;
+      g.shadowOffsetY = 2;
       g.fillStyle = '#fff';
       g.strokeStyle = '#1b1d26';
-      g.lineWidth = 4;
+      g.lineWidth = 3;
       g.beginPath();
       g.arc(32, 28, 24, 0, Math.PI * 2);
       g.fill();
@@ -323,8 +373,9 @@ export class GameScene extends Phaser.Scene {
       g.lineTo(32, 62);
       g.lineTo(38, 50);
       g.fill();
+      g.shadowColor = 'transparent';
       g.fillStyle = '#1b1d26';
-      g.font = `bold ${glyph.length > 1 && /[A-Z]/.test(glyph) ? 20 : 26}px system-ui, sans-serif`;
+      g.font = `900 ${glyph.length > 1 && /[A-Z]/.test(glyph) ? 20 : 26}px ${GAME_FONT}`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText(glyph, 32, 29);
@@ -384,7 +435,7 @@ export class GameScene extends Phaser.Scene {
     for (const pr of view.projectiles) {
       const def = WEAPONS[pr.wi];
       const tex = def.id === 'buzzsaw' ? 'blade' : def.id === 'popper' ? 'shellgl' : 'rocket';
-      const s = this.sprite(`p${pr.id}`, tex, 45).setScale(tex === 'rocket' ? 0.9 : 1);
+      const s = this.sprite(`p${pr.id}`, tex, 45).setScale(spr(tex === 'rocket' ? 0.9 : 1));
       s.setPosition(pr.x, pr.y);
       if (tex === 'rocket') {
         s.setRotation(Math.atan2(pr.vy, pr.vx));
@@ -393,7 +444,7 @@ export class GameScene extends Phaser.Scene {
       } else s.rotation += 0.4;
     }
     for (const g of view.grenades) {
-      const s = this.sprite(`g${g.id}`, `grenade:${g.kind}`, 46).setScale(0.9);
+      const s = this.sprite(`g${g.id}`, `grenade:${g.kind}`, 46).setScale(spr(0.95));
       s.setPosition(g.x, g.y);
       if (g.stuck === -1) s.rotation += 0.15;
       const def = GRENADES[g.kind];
@@ -405,7 +456,7 @@ export class GameScene extends Phaser.Scene {
       if (Math.random() < 0.25) this.fx.cloud(c.x, c.y, c.r, GRENADES[c.kind].id === 'gas' ? 0xa6e04a : 0xd8dce4);
     }
     for (const d of view.dropped) {
-      const s = this.sprite(`d${d.id}`, weaponIcon(this, d.wi), 21).setScale(0.55);
+      const s = this.sprite(`d${d.id}`, weaponIcon(this, d.wi), 21).setScale(gs(0.55));
       s.setPosition(d.x, d.y - 6).setRotation(0.15);
     }
     let i = 0;
@@ -413,14 +464,15 @@ export class GameScene extends Phaser.Scene {
     for (const sp of view.spawners) {
       const o = objs[i];
       if (!o) break;
-      const ped = this.sprite(`ped${i}`, 'pedestal', 19).setScale(0.8);
+      const ped = this.sprite(`ped${i}`, 'pedestal', 19).setScale(spr(0.85));
       ped.setPosition(o.x, o.y - 4).setAlpha(sp.available ? 1 : 0.45);
       const key = `pk${i}`;
       if (sp.available) {
         const tex = o.kind === 'health' ? 'medkit' : o.kind === 'grenade' ? `grenade:${Math.max(0, sp.item)}` : o.kind === 'dual' ? 'dual' : sp.item >= 0 ? weaponIcon(this, sp.item) : 'crate';
         const s = this.sprite(key, tex, 20);
         const bob = Math.sin(now * 0.004 + i) * 3;
-        s.setPosition(o.x, o.y - 22 + bob).setScale(o.kind === 'grenade' ? 1.4 : o.kind === 'weapon' || o.kind === 'heavy' ? 0.62 : 0.85);
+        const gun = tex.startsWith('gun2:');
+        s.setPosition(o.x, o.y - 22 + bob).setScale(o.kind === 'grenade' ? spr(1.4) : gun ? gs(0.62) : spr(0.85));
         if (o.kind === 'heavy') {
           const glow = this.sprite(`pkg${i}`, 'dot', 18);
           glow.setPosition(o.x, o.y - 22).setScale(2.4).setTint(0xff8a3d).setAlpha(0.35 + Math.sin(now * 0.006) * 0.15).setBlendMode(Phaser.BlendModes.ADD);
@@ -474,7 +526,7 @@ export class GameScene extends Phaser.Scene {
         s.setVisible(false);
         continue;
       }
-      s.setVisible(true).setOrigin(0.15, 1).setPosition(f.x, f.y).setScale(0.9).setRotation(Math.sin(now * 0.004) * 0.05);
+      s.setVisible(true).setOrigin(0.15, 1).setPosition(f.x, f.y).setScale(spr(0.9)).setRotation(Math.sin(now * 0.004) * 0.05);
       if (f.state === 0) {
         g.fillStyle(this.ctx.teamColor(f.team), 0.25).fillEllipse(f.x, f.y - 2, 64, 12);
       }
@@ -486,8 +538,10 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const me = view.me;
     const s = this.ctx.settings();
-    const baseVisible = this.ctx.isTouch ? 600 : 720;
-    let target = cam.height / baseVisible;
+    // Show a fixed world height so characters read the same size on every screen; keep enough width on
+    // narrow viewports so sightlines are not cut short.
+    const visH = this.ctx.isTouch ? VIEW_HEIGHT_TOUCH : VIEW_HEIGHT_DESKTOP;
+    let target = Math.min(cam.height / visH, cam.width / (visH * 1.45));
     let fx = this.camX;
     let fy = this.camY;
     if (me) {
@@ -516,6 +570,9 @@ export class GameScene extends Phaser.Scene {
       sy = (Math.random() - 0.5) * amp;
     }
     cam.centerOn(this.camX + sx, this.camY + sy);
+    cam.preRender();
+    const wv = cam.worldView;
+    this.backdrop?.sync(wv.x, wv.y, cam.zoom, wv.width, wv.height);
     // Mouse aim target in world space.
     const ptr = this.input.activePointer;
     if (this.ctx.controls.device === 'keyboard') {
@@ -544,7 +601,7 @@ export class GameScene extends Phaser.Scene {
       rx = me.x + Math.cos(a) * dist;
       ry = me.y - 28 + Math.sin(a) * dist;
     }
-    this.reticle.setVisible(true).setPosition(rx, ry).setScale(0.55 / Math.max(0.6, this.zoom) * 1.3);
+    this.reticle.setVisible(true).setPosition(rx, ry).setScale(spr((0.62 / Math.max(0.6, this.zoom)) * 1.7));
     if (me.reloadT > 0) this.reticle.setAlpha(0.4).setRotation(this.reticle.rotation + dt * 6);
     else this.reticle.setAlpha(0.9).setRotation(0);
     const hm = this.ctx.hitMarker;
@@ -580,36 +637,38 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateParallax(now: number): void {
-    const cam = this.cameras.main;
-    const factors = [0.12, 0.25, 0.42];
-    const q = this.ctx.settings().graphics.quality;
-    this.bgLayers.forEach((l, i) => {
-      l.setVisible(!(q === 'low' && i === 2));
-      l.tilePositionX = cam.scrollX * factors[i] + (this.map.theme.backdrop === 'space' && i === 0 ? now * 0.004 : 0);
-      const camCenterFrac = (cam.scrollY + cam.height / 2 / cam.zoom) / this.world.pxH;
-      l.y = cam.height * (0.86 + i * 0.07) + (0.5 - camCenterFrac) * 220 * (i + 1) * 0.6;
-    });
+  private updateLiquids(now: number, dt: number): void {
     for (const l of this.liquids) {
       if (l.kind === 'lava') {
-        l.img.setFillStyle(0xff6a1f, 0.85 + Math.sin(now * 0.003 + l.y) * 0.08);
-        if (l.surf) l.surf.setAlpha(0.7 + Math.sin(now * 0.008 + l.y) * 0.3);
-        if (Math.random() < 0.02) this.fx.spawn('dot', l.img.x + Math.random() * l.img.width, l.y, { vy: -80, gravity: 200, life: 0.6, scale: 0.3, tint: 0xffd34d, add: true });
-      } else if (l.surf) l.surf.setAlpha(0.55 + Math.sin(now * 0.004 + l.img.x) * 0.25);
+        l.img.tilePositionX += dt * 6;
+        if (l.surf) l.surf.tilePositionX -= dt * 14;
+        if (l.glow) l.glow.setAlpha(0.3 + Math.sin(now * 0.003 + l.y) * 0.08);
+        if (l.surf && Math.random() < 0.02 * (l.w / 200)) {
+          this.fx.spawn('dot', l.x + Math.random() * l.w, l.y, { vy: -90 - Math.random() * 60, gravity: 220, life: 0.7, scale: 0.28, tint: 0xffd34d, add: true, depth: 15 });
+        }
+      } else {
+        l.img.tilePositionX += dt * 10;
+        if (l.surf) {
+          l.surf.tilePositionX += dt * 22;
+          l.surf.setAlpha(0.65 + Math.sin(now * 0.004 + l.x) * 0.15);
+        }
+      }
     }
   }
 
   private updateWeather(dt: number): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
+    if (!this.weather.length) return;
+    const v = this.cameras.main.worldView;
+    const w = v.width + 40;
+    const h = v.height + 40;
+    const snow = this.map.theme.weather === 'snow';
     for (const f of this.weather) {
-      f.x += f.vx * dt + (this.map.theme.weather === 'snow' ? Math.sin(f.y * 0.02) * 20 * dt : 0);
+      // Positions are kept relative to the view so flakes wrap around the camera, with a little parallax.
+      f.x += f.vx * dt + (snow ? Math.sin(f.y * 0.02) * 20 * dt : 0);
       f.y += f.vy * dt;
-      if (f.x < -10) f.x += w + 20;
-      if (f.x > w + 10) f.x -= w + 20;
-      if (f.y < -10) f.y += h + 20;
-      if (f.y > h + 10) f.y -= h + 20;
-      f.img.setPosition(f.x, f.y);
+      f.x = (((f.x % w) + w) % w);
+      f.y = (((f.y % h) + h) % h);
+      f.img.setPosition(v.x - 20 + f.x, v.y - 20 + f.y);
     }
   }
 
@@ -668,6 +727,8 @@ export class GameScene extends Phaser.Scene {
       if (l.t <= 0) this.glows.splice(i, 1);
     }
     tex.refresh();
+    const k = 4 / cam.zoom;
+    this.darkImg!.setPosition(cam.worldView.x, cam.worldView.y).setScale(k);
   }
 
   // ------------------------------------------------------------------ audio helpers

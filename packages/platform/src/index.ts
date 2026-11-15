@@ -17,16 +17,25 @@ export interface KeyValueStore {
   remove(key: string): Promise<void>;
 }
 
+/** Resolve to `fallback` if a native call has not answered in `ms` (a stuck plugin must never block startup). */
+export function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p.catch(() => fallback), new Promise<T>((r) => setTimeout(() => r(fallback), ms))]);
+}
+
 class NativeStore implements KeyValueStore {
   private prefs = import('@capacitor/preferences').then((m) => m.Preferences);
   async get(key: string) {
-    return (await (await this.prefs).get({ key })).value;
+    return withTimeout(
+      this.prefs.then((p) => p.get({ key })).then((r) => r.value),
+      2500,
+      null,
+    );
   }
   async set(key: string, value: string) {
-    await (await this.prefs).set({ key, value });
+    await withTimeout(this.prefs.then((p) => p.set({ key, value })), 2500, undefined);
   }
   async remove(key: string) {
-    await (await this.prefs).remove({ key });
+    await withTimeout(this.prefs.then((p) => p.remove({ key })), 2500, undefined);
   }
 }
 
@@ -149,25 +158,25 @@ export async function initLifecycle(h: LifecycleHandlers): Promise<() => void> {
 }
 
 /** Native shell setup: landscape lock, hidden system bars, hide splash. */
-export async function initNativeShell(): Promise<void> {
+/** Hide the native splash. Called first thing at boot: the HTML loader takes over from here. */
+export async function hideSplash(): Promise<void> {
   if (!isNative) return;
   try {
-    const { ScreenOrientation } = await import('@capacitor/screen-orientation');
-    await ScreenOrientation.lock({ orientation: 'landscape' });
-  } catch {
-    // orientation plugin missing
-  }
-  try {
-    await SystemBars.hide();
-  } catch {
-    // system bars API missing
-  }
-  try {
     const { SplashScreen } = await import('@capacitor/splash-screen');
-    await SplashScreen.hide({ fadeOutDuration: 200 });
+    await withTimeout(SplashScreen.hide({ fadeOutDuration: 200 }), 1500, undefined);
   } catch {
     // splash plugin missing
   }
+}
+
+export async function initNativeShell(): Promise<void> {
+  if (!isNative) return;
+  await hideSplash();
+  // Each call is independent and time-boxed: a plugin that never answers must not block the others.
+  await Promise.all([
+    withTimeout(import('@capacitor/screen-orientation').then(({ ScreenOrientation }) => ScreenOrientation.lock({ orientation: 'landscape' })), 2000, undefined),
+    withTimeout(Promise.resolve().then(() => SystemBars.hide()), 2000, undefined),
+  ]);
 }
 
 // ---------------------------------------------------------------- sharing
@@ -205,7 +214,10 @@ export function isTouchDevice(): boolean {
 export function webglAvailable(): boolean {
   try {
     const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    const gl = (c.getContext('webgl2') ?? c.getContext('webgl')) as WebGLRenderingContext | null;
+    // Release the probe context right away: browsers cap live WebGL contexts and the game needs one.
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    return !!gl;
   } catch {
     return false;
   }

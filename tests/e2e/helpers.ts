@@ -7,7 +7,9 @@ export async function onboard(page: Page, name = 'Tester'): Promise<void> {
   if (await modal.isVisible({ timeout: 3000 }).catch(() => false)) {
     await page.getByTestId('name-input').fill(name);
     await page.getByTestId('name-save').click();
-    await expect(modal).toBeHidden();
+    // CI renders with software GL (SwiftShader), where the first paint of the animated menu can stall the
+    // compositor for several seconds; the dialog's exit fade needs frames, so allow it more time here.
+    await expect(modal).toBeHidden({ timeout: 15000 });
   }
   const skip = page.getByTestId('tutorial-skip');
   if (await skip.isVisible({ timeout: 2000 }).catch(() => false)) {

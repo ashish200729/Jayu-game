@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
 import { hi } from '../src/i18n/hi';
 import { applyMatch, levelInfo, migrateProfile, newProfile, refreshChallenges, PROFILE_VERSION } from '../src/core/profile';
-import { migrateSettings, defaultSettings } from '../src/core/settings';
+import { migrateSettings, defaultSettings, defaultTouchLayout } from '../src/core/settings';
 
 describe('i18n', () => {
   it('Hindi has every English key and no extras', () => {
@@ -70,5 +70,45 @@ describe('settings', () => {
     expect(s.audio.music).toBe(defaultSettings().audio.music);
     expect(s.language).toBe('hi');
     expect(s.controls.layouts).toHaveLength(3);
+  });
+
+  it('upgrades untouched v1 touch layouts but keeps customised ones', () => {
+    const c = (x: number, y: number, size = 1, visible = true) => ({ x, y, size, opacity: 0.55, visible });
+    const v1 = {
+      move: c(0.14, 0.72, 1),
+      aim: c(0.84, 0.7, 1),
+      fire: c(0.7, 0.86, 0.9, false),
+      jet: c(0.26, 0.9, 0.9, false),
+      grenade: c(0.9, 0.38, 0.85),
+      swap: c(0.78, 0.38, 0.85),
+      reload: c(0.66, 0.38, 0.8),
+      melee: c(0.95, 0.52, 0.8),
+      zoom: c(0.95, 0.24, 0.8),
+      crouch: c(0.05, 0.42, 0.8),
+      emote: c(0.05, 0.28, 0.75),
+    };
+    const custom = { ...v1, grenade: c(0.5, 0.5, 1.2) };
+    const s = migrateSettings({ version: 1, controls: { ...defaultSettings().controls, layouts: [v1, custom, v1] } });
+    expect(s.version).toBe(2);
+    expect(s.controls.layouts[0]).toEqual(defaultTouchLayout());
+    expect(s.controls.layouts[1].grenade).toEqual(c(0.5, 0.5, 1.2));
+    expect(s.controls.layouts[2]).toEqual(defaultTouchLayout());
+    // Already-migrated settings are never reset.
+    const again = migrateSettings({ ...s, controls: { ...s.controls, layouts: [custom, custom, custom] } });
+    expect(again.controls.layouts[0].grenade).toEqual(c(0.5, 0.5, 1.2));
+  });
+
+  it('default touch controls never overlap on a 915x412 phone', () => {
+    const l = defaultTouchLayout();
+    const W = 915;
+    const H = 412;
+    const r = (k: keyof typeof l) => (k === 'move' || k === 'aim' ? 62 : 30 * l[k].size);
+    const keys = (Object.keys(l) as (keyof typeof l)[]).filter((k) => l[k].visible);
+    for (const a of keys)
+      for (const b of keys) {
+        if (a >= b) continue;
+        const d = Math.hypot((l[a].x - l[b].x) * W, (l[a].y - l[b].y) * H);
+        expect(d, `${a} vs ${b}`).toBeGreaterThan(r(a) + r(b));
+      }
   });
 });

@@ -9,7 +9,7 @@ export function UpdateRequired() {
     <Page title={t('error.update')} back={leaveSession} testId="update-required">
       <div className="grid place-items-center min-h-full py-2">
         <Panel className="max-w-lg p-5 md:p-6 text-center flex flex-col items-center gap-3">
-          <span className="grid place-items-center w-16 h-16 rounded-full bg-sun text-ink border-2 border-ink shadow-chunky">
+          <span className="grid place-items-center w-16 h-16 rounded-full bg-gradient-to-b from-[#fff0a6] to-[#ffb92e] text-[#2a1d00] shadow-[0_0_30px_-4px_rgb(255_200_70/0.7)]">
             <Icon name="refresh" className="w-9 h-9" />
           </span>
           <h2 className="font-display font-extrabold text-2xl md:text-3xl">{t('error.update')}</h2>

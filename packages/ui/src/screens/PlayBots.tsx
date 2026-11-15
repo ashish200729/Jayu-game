@@ -61,7 +61,7 @@ export function SurvivalSetup() {
       <div className="grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-3 md:gap-4">
         <Panel className="p-4 flex flex-col gap-3">
           <div className="flex items-center gap-3">
-            <span className="grid place-items-center w-12 h-12 rounded-md bg-sun text-ink border-2 border-ink shrink-0">
+            <span className="relative grid place-items-center w-12 h-12 rounded-[14px] bg-gradient-to-b from-[#fff0a6] to-[#ffb92e] text-[#2a1d00] shadow-[0_6px_18px_-6px_rgb(255_211_77/0.7)] shrink-0">
               <Icon name="waves" className="w-7 h-7" />
             </span>
             <div>
@@ -78,8 +78,8 @@ export function SurvivalSetup() {
             <SectionTitle className="!text-base !px-0">{t('survival.upgrades')}</SectionTitle>
             <ul className="grid grid-cols-2 gap-1.5">
               {UPGRADES.map((u) => (
-                <li key={u.id} className="rounded-md bg-panel-2 border-2 border-ink px-2.5 py-1.5">
-                  <div className="font-bold text-sun text-sm leading-tight">{t(`upgrade.${u.id}`)}</div>
+                <li key={u.id} className="well rounded-[14px] px-3 py-2">
+                  <div className="font-display font-bold text-sun text-[0.95rem] leading-tight">{t(`upgrade.${u.id}`)}</div>
                   <div className="text-xs text-muted leading-tight">{t(`upgrade.${u.id}.desc`)}</div>
                 </li>
               ))}
@@ -125,15 +125,18 @@ function TrainingCard({ icon, title, body, extra, onClick, testId, tone, autoFoc
         sfx('ui_click');
         onClick();
       }}
-      className="flex flex-col text-left rounded-xl border-2 border-ink bg-panel shadow-chunky hover:bg-panel-2 hover:-translate-y-0.5 active:translate-y-1 active:shadow-none transition-all duration-[var(--duration-fast)] overflow-hidden"
+      className="tile group flex flex-col text-left rounded-[var(--radius-xl)] hover:-translate-y-1 active:translate-y-0 overflow-hidden"
     >
-      <span className={`flex items-center gap-3 px-4 py-3 border-b-2 border-ink text-ink ${tone}`}>
-        <Icon name={icon} className="w-8 h-8" />
+      <span className="relative flex items-center gap-3 px-4 pt-4 pb-3">
+        <span className={`relative grid place-items-center w-12 h-12 rounded-[14px] shrink-0 bg-gradient-to-b ${tone}`}>
+          <span aria-hidden="true" className="absolute inset-x-1 top-0.5 h-1/2 rounded-t-[12px] bg-white/30" />
+          <Icon name={icon} className="relative w-6 h-6" strokeWidth={2.4} />
+        </span>
         <span className="font-display font-extrabold text-xl leading-tight">{title}</span>
       </span>
-      <span className="p-4 flex flex-col gap-2 flex-1">
-        <span className="text-sm text-text leading-snug">{body}</span>
-        {extra && <span className="mt-auto inline-flex self-start px-2 py-0.5 rounded-full border-2 border-ink bg-night text-sm font-bold text-mint tabular-nums">{extra}</span>}
+      <span className="px-4 pb-4 flex flex-col gap-3 flex-1">
+        <span className="text-sm text-muted leading-relaxed">{body}</span>
+        {extra && <span className="mt-auto inline-flex self-start items-center gap-1.5 px-2.5 py-1 rounded-full well-sunken text-xs font-extrabold text-mint tabular-nums"><span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-mint shadow-[0_0_8px_rgb(140_240_106/0.9)]" />{extra}</span>}
       </span>
     </button>
   );
@@ -149,7 +152,7 @@ export function TrainingSetup() {
       <div className="grid sm:grid-cols-3 gap-3 md:gap-5 max-w-6xl mx-auto pt-1">
         <TrainingCard
           icon="star"
-          tone="bg-sun"
+          tone="from-[#fff0a6] to-[#ffb92e] text-[#2a1d00] shadow-[0_6px_18px_-6px_rgb(255_211_77/0.7)]"
           title={t('training.tutorial')}
           body={t('training.tutorialBody')}
           extra={done ? t('training.completed') : t('training.recommended')}
@@ -157,8 +160,8 @@ export function TrainingSetup() {
           autoFocus
           onClick={() => startOffline({ mapId: 'training-grounds', mode: 'training' }, 'tutorial')}
         />
-        <TrainingCard icon="target" tone="bg-coral" title={t('training.range')} body={t('training.rangeBody')} testId="training-range" onClick={train} />
-        <TrainingCard icon="flag" tone="bg-mint" title={t('training.course')} body={t('training.courseBody')} extra={course} testId="training-course" onClick={train} />
+        <TrainingCard icon="target" tone="from-[#ffc2a6] to-[#ff6a36] text-[#3a1000] shadow-[0_6px_18px_-6px_rgb(255_122_69/0.7)]" title={t('training.range')} body={t('training.rangeBody')} testId="training-range" onClick={train} />
+        <TrainingCard icon="flag" tone="from-[#c4ffa6] to-[#4fc63a] text-[#0d2a06] shadow-[0_6px_18px_-6px_rgb(140_240_106/0.6)]" title={t('training.course')} body={t('training.courseBody')} extra={course} testId="training-course" onClick={train} />
       </div>
       <p className="text-center text-xs text-muted mt-4 px-4">{t('training.note')}</p>
     </Page>

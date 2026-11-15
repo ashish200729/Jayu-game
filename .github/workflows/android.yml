@@ -1,0 +1,47 @@
+name: Android APK
+
+# Builds an installable debug APK (sideload for testing) on every push and on demand.
+# Download it from the run's "Artifacts" section: jayu-android-debug.
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+        with:
+          # The default also requests the retired 'tools' package, which current sdkmanager rejects.
+          packages: platform-tools
+      - run: npx cap sync android
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/jayu-${GITHUB_SHA::7}-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jayu-android-debug
+          path: out/*.apk
+          if-no-files-found: error
+          retention-days: 30
