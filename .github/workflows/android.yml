@@ -28,6 +28,9 @@ jobs:
           java-version: 21
           cache: gradle
       - uses: android-actions/setup-android@v3
+        with:
+          # The default also requests the retired 'tools' package, which current sdkmanager rejects.
+          packages: platform-tools
       - run: npx cap sync android
       - name: Build debug APK
         working-directory: android
